@@ -36,6 +36,7 @@
 ```c
 #include <stdio.h>
 #include <stdlib.h>
+#include <malloc.h>
 
 typedef int ElemType; // 假定线性表的元素类型是整型
 #define LIST_SIZE 1024 // 假定我们的线性表长度是1024
@@ -88,9 +89,11 @@ int GetSizeSeq (SequenList* pList)
 ### 取元素(给位置)
 
 ```c
+返回值：TURE FALSE
+pos这里是下标，正常来说应该是位序 [0, pLlist->last-1]
 int GetElemSqList (SequenList* pList, int pos, ElemType* e)
 {
-  if ( pos<0 || pos>pList->last )
+  if ( pos<0 || pos>pList->last-1 )
   {
 	return FALSE;
   }
@@ -109,6 +112,7 @@ int GetElemSqList (SequenList* pList, int pos, ElemType* e)
 ### 查元素(给元素)
 
 ```c
+返回下标
 int LocateElemSqList (SequenList* pList, ElemType key)
 {
   int i;
@@ -126,20 +130,21 @@ int LocateElemSqList (SequenList* pList, ElemType key)
 ### 插入元素(指定位置)
 
 ```c
+边界判断-插入之后，数组不能超过长度，因为是静态数组，这我容易忘
 int InsertElemSqList (SequenList* pList, ElemType x, int k)
 {
 	int j;
-  	if ( pList->last >= LIST_SIZE-1 )
+  	if ( pList->last >= LIST_SIZE )
     	return FALSE;
-  	if ( k<0 || k>(pList->last+1) )
+  	if ( k<0 || k>(pList->last) )
       	return FALSE;
   
   	for ( j=pList->last; j>=k; j-- )
     {
-      pList->data[j+1] = pList->data[j];
+      pList->data[j+1] = pList->data[j]; // 缓冲区溢出？
     }
   	pList->data[k] = x;
-  	pList->last = pList->last + 1;
+  	pList->last++;
   	return TRUE;
 }
 ```
@@ -151,7 +156,7 @@ int InsertElemSqList (SequenList* pList, ElemType x, int k)
 ```c
 int DelElemSqList (SequenList* pList, int pos)
 {
-	if (( pos >= 0 && pos <= pList->last ) && ( pList->last != 0 ))
+	if (( pos >= 0 && pos <= pList->last-1 ) && ( pList->last != 0 ))
     {
       for ( int j=k; j<=pList->last; j++ )
       {
@@ -181,7 +186,31 @@ void showSeqList (SequenList* pList)
 ### 测试
 
 ```c
+int main ()
+{
+  	printf("haha \n");
+	IPtr = InitSeq(); // 初始化
+	showSeqList(IPtr); // 遍历
+	InsertElemSqList(IPtr, 100, 0); // 插入
+	InsertElemSqList(IPtr, 200, 0);
+	InsertElemSqList(IPtr, 300, 0);
+	InsertElemSqList(IPtr, 400, 0);
+	InsertElemSqList(IPtr, 500, 4);
+	showSeqList(IPtr);
 
+	int len;
+	len = GetSizeSeq(IPtr);
+	printf("长度：%d \n", len);
+
+	//DelElemSqList(IPtr, 4);
+	//showSeqList(IPtr);
+
+	int elem = 10;
+	int flag = 1;
+	flag = GetElemSqList(IPtr, 5, &elem); // 获取
+	printf("获取元素返回值：%d \n", flag);
+	printf("元素%d \n", elem);
+}
 ```
 
 
@@ -201,7 +230,7 @@ void showSeqList (SequenList* pList)
 typedef int ElemType;
 typedef struct node 
 {
-	int data;
+	ElemType data;
   	struct node* pNext;
 }LinkListNode;
 
@@ -221,6 +250,7 @@ LinkListNode* InitLinkList (void)
   pHead = (LinkListNode*)malloc(sizeof(LinkListNode));
   if ( pHead )
   	pHead->pNext = NULL;
+  // 我联系没有加if防御性编程，警告：取消对null指针phead的引用，原因分析：在给一个指针分配内存（malloc）之后需要检查还有没有剩余空间，如果没有剩余空间，该指针就会返回null
   
   return pHead;
 }
@@ -237,28 +267,31 @@ int GetSizeLinkList (LinkListNode* pHead)
       n++;
       pHead = pHead->pNext;
     }
+  return n;
 }
 ```
 
 
 
-#### 取元素(给位置)
+#### 取元素(给位置 位序)
 
 ```c
+有意思的是：如果你想 if(pos<=0 || pos>??)
+所以这里就应该下面这样写
 LinkListNode* GetLinkListNode (LinkListNode* pHead, int pos)
 {
-  LinkListNode* p = pHead;
-  int j = 0;
-  if ( pos == 0 )
+  if ( pos <= 0 )
     return NULL;
   
+  LinkListNode* p = pHead;
+  int j = 0;
   while ( j<pos && p->pNext != NULL )
   {
     p = p->pNext;
     j++;
   }
-  
-  if ( pos == j )
+  // 这里还需要加一个判断，万一p->pNext就结束了
+  if ( pos == j ) 
     return p;
   else 
     return NULL;
@@ -270,7 +303,7 @@ LinkListNode* GetLinkListNode (LinkListNode* pHead, int pos)
 #### 查位置(给元素)
 
 ```c
-LinkListNode* LocateLinkList (LinkListNode* pHead, int objData)
+LinkListNode* LocateLinkList (LinkListNode* pHead, Elemtype objData)
 {
   LinkListNode* p;
   p = pHead->pNext;
@@ -280,6 +313,17 @@ LinkListNode* LocateLinkList (LinkListNode* pHead, int objData)
 	p = p->pNext;
   }
   return p;
+  // 我思考没有找到呢？返回啥？
+  // 最后都没有找到就是NULL 找到了就是返回指针
+}
+
+while写法2：对比
+while (p != NULL)
+{
+  if ( p->data != objdata )
+    p = p->pNext;
+  else 
+    break;
 }
 ```
 
@@ -289,21 +333,26 @@ LinkListNode* LocateLinkList (LinkListNode* pHead, int objData)
 
 ```c
 // 给你一个顺序表数据，这里用数组存放
+// q指针始终指向最后一个元素
+// p始终指向最新插入的元素
 LinkListNode* Create_Rear_LkList (ElemType arr[], int length)
 {
-  LinkListNode *pHead, *p, *q;
+  LinkListNode *pHead=NULL, *p=NULL, *q=NULL;
   pHead = (LinkListNode*)malloc(sizeof(LinkListNode));
-  q = pHead;
+  pHead && (q = pHead);
   
   for ( int i=0; i<length; i++ )
   {
     p = (LinkListNode*)malloc(sizeof(LinkListNode));
-    p->data = arr[i];
-    
-    q->pNext = p;
-    q = p;
+   if (p)
+   	   p->data = arr[i];
+   if (q)
+    {
+     q->pNext = p;
+     q = p;     
+    }
   }
-  p->pNext = NULL;
+  p && (p->pNext = NULL);
   return pHead;
 }
 ```
@@ -312,23 +361,31 @@ LinkListNode* Create_Rear_LkList (ElemType arr[], int length)
 
 ```c
 // q始终指向第一个元素结点.
-// 有一个头指针q始终指向第一个结点，不断加入即可
+// p指向新加入的元素
+// 有一个头指针q始终指向第一个结点，遍历数组，不断加入即可
 LinkListNode* Create_Front1_LkList (ElemType arr[], int length)
 {
-  LinkListNode *pHead, *p, *q;
+  LinkListNode *pHead=NULL, *p=NULL, *q=NULL;
   pHead = (LinkListNode*)malloc(sizeof(LinkListNode));
-  pHead->pNext = NULL;
-  q = pHead->pNext;
+  if ( pHead )
+  {
+    pHead->pNext = NULL;
+    q = pHead->pNext;  
+  }
   
   // 头插的时候，必须逆序遍历顺序表
   for ( int i=length-1; i>=0; i-- )
   {
     p = (LinkListNode*)malloc(sizeof(LinkListNode));
-    p->data = arr[i];
-    p->pNext = q;
-    pHead->pNext = p;
-    q = pHead->pNext; // 更新q指针 
+    if ( p )
+    {
+      p->data = arr[i];
+      p->pNext = q;
+      pHead && (pHead->pNext = p);
+      pHead && (q = pHead->pNext); // 更新q指针  
+    }
   }
+  
   return pHead;
 }
 ```
@@ -336,19 +393,31 @@ LinkListNode* Create_Front1_LkList (ElemType arr[], int length)
 #### 插元素(给位置)_头插法2
 
 ```c
-// 搞个尾指针，先不要头节点，不断加入新结点，直到全部加入，最后再申请一个头节点，指向第一个结点 
+// 搞个首元素q指针，先不要头节点，不断加入新结点，直到全部加入，最后再申请一个头节点，指向第一个结点 
+// q首p新加入
 LinkListNode* Create_Front2_LkList (ElemType arr[], int length)
 {
-  LinkListNode *pHead, *p, *q;
-  q = NULL:
+  LinkListNode *pHead=NULL, *p=NULL, *q=NULL;
   
   for ( int i=length-1; i>=0; i-- )
   {
     p = (LinkListNode*)malloc(sizeof(LinkListNode));
-    p->data = arr[i];
-    p->pNext = q;
-    q = p;
+    if ( p )
+    {
+      p->data = arr[i];
+      p->pNext = q;
+      q = p;     
+    }
   }
+  
+  pHead = (LinkListNode*)malloc(sizeof(LinkListNode));
+  if (pHead)
+  {
+    pHead->pNext = q;
+    return pHead;
+  }
+  else 
+    return NULL;
 }
 ```
 
@@ -357,19 +426,24 @@ LinkListNode* Create_Front2_LkList (ElemType arr[], int length)
 ```c
 // 我最喜欢这个算法，1的升级版。省了一个变量内存。
 // pHead头指针固定了，pHead->pNext始终指向第一个元素结点
+// p新
 LinkListNode* Create_Front3_LkList (ElemType arr[], int length)
 {
-	LinkListNode *pHead, *p;
+	LinkListNode *pHead=NULL, *p=NULL;
   	pHead = (LinkListNode*)malloc(sizeof(LinkListNode));
-  	pHead->pNext = NULL;
+  	pHead && (pHead->pNext = NULL);
   	
   	for ( int i=length-1; i>=0; i-- )
     {
       p = (LinkListNode*)malloc(sizeof(LinkListNode));
-      p->data = arr[i];
-      p->pNext = pHead->pNext;
-      pHead->pNext = p;
+      if ( p )
+      {
+        p->data = arr[i];
+        pHead && (p->pNext = pHead->pNext);
+        pHead && (pHead->pNext = p);
+      }
     }
+  
   	return pHead; 
 }
 ```
@@ -395,8 +469,16 @@ LinkListNode* Delete_After_LkList (LinkListNode* ptr)
 ```c
 LinkListNode* Delete_i_LkList (LinkListNode* pHead, int i)
 {
+  // 边界判断-pos 
+  if ( pos <= 0 ) return NULL;
+  // 边界判断-链表是否为空 !!似乎链表不用像数组那样去思考
+  
   LinkListNode *ptr, *qPtr = NULL;
-  ptr = GetLinkListNode(pHead, i-1); // 找到i的前驱结点
+  // 这里区分1和非1，因为当pos是1，GetLinkListNode传过去的是1-1=0，GetLinkListNode直接返回NULL，所以这里加个判断，pos是1，直接返回头节点，因为pos是1代表第一个元素，前驱自然就是头节点了
+  if ( pos == 1 )
+    ptr = pHead;
+  else 
+    ptr = GetLinkListNode(pHead, pos-1); //拿到i的前驱结点
   
   if ( ptr != NULL && ptr->pNext != NULL )
   {
@@ -419,13 +501,72 @@ void ShowLkList (LinkListNode* pHead)
       printf(" %d", p->data);
       p = p->pNext;
     }
+	printf("\n");
 }
 ```
 
 #### 测试
 
 ```c
+注意：下面条件判断不一样，假设下一个是NULL，
+while ( p!=NULL ) 多了行代码 LinkListNode *p = pHead->pNext;
+while ( p->pNext )
+  
+int main ()
+{
+  //LinkListNode *LNode = InitLinkList();
 
+	// 尾插法
+	int arr[10] = { 1,3,5,7,9,2,4,6,8,10 };
+	int sz = sizeof(arr) / sizeof(arr[0]);
+	LinkListNode *LHead = Create_Rear_LkList(arr, sz);
+	showLkList(LHead); // 遍历
+
+	// 头插法1
+	//int arr2[] = { 2,3,6,7,1, 9,4,5,10 };
+	//int sz2 = sizeof(arr2) / sizeof(arr2[0]);
+	//LinkListNode* LHead6 = Create_Front1_LkList(arr2, sz2);
+	//showLkList(LHead6); // 遍历
+
+	// 头插法2
+	//int arr2[] = { 2,3,6,7,1, 9,4,5,10,8 };
+	//int sz2 = sizeof(arr2) / sizeof(arr2[0]);
+	//LinkListNode* LHead6 = Create_Front2_LkList(arr2, sz2);
+	//showLkList(LHead6); // 遍历
+
+	// 头插法3
+	int arr2[] = { 2,3,6,7,1, 9,4,5,10,8 };
+	int sz2 = sizeof(arr2) / sizeof(arr2[0]);
+	LinkListNode* LHead6 = Create_Front3_LkList(arr2, sz2);
+	showLkList(LHead6); // 遍历
+
+	//int len;
+	//len = GetSizeLinkList(LHead); // 长度获取
+	//printf("%d \n", len);
+
+	//LinkListNode *LHead2 = GetLinkListNode(LHead, 1);  // 获取
+	//if ( LHead2 )
+	//	printf("%d \n", LHead2->data);
+	
+	// 查位置(给元素)
+	//LinkListNode *LHead3 = LocateLinkList(LHead, 88);
+	//if ( LHead3 )
+	//	printf("%d \n", LHead3->data);
+	//else 
+	//	printf("空指针 \n");
+
+	// 删除元素(给定结点的后续结点)
+	//LinkListNode* LHead5 = Delete_After_LkList(LHead->pNext);
+	//if ( LHead5 )
+	//	printf("%d \n", LHead5->data);
+	//else 
+	//	printf("空指针 \n");
+	//showLkList(LHead);
+
+	// 按照位置删除
+	//Delete_i_LkList(LHead, 10);
+	//showLkList(LHead);
+}
 ```
 
 #### 题目一-顺序表逆转
