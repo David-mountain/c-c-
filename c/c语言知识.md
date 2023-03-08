@@ -583,6 +583,476 @@ int main ()
 
 ## (二) 分支和循环
 
+### 1. 选择结构
+
+```c
+c语言是一门结构化的程序设计语言
+顺序结构
+选择结构
+循环结构
+
+选择结构：---------------------------
+if ( 表达式 )
+  语句1；
+else 
+  语句2；
+表达式真假：C中0是假，非0就是真
+
+例1：
+int a = 0;
+int b = 2;
+if ( a == 1 )
+  if ( b == 2 )
+    printf("hehe \n");
+else
+  printf("haha \n");
+答案：什么也不打印，提醒我们要注意代码规范。
+else寻找距离自己最近的if，代码规范
+
+例2：
+if ( condition )
+{
+	return x;
+}
+return y;
+对比：
+if ( condition )
+{
+	return x;
+}
+else 
+{
+	return y;
+}
+
+例3：
+int num = 1;
+if ( num = 5 )
+{
+  printf("hehe \n");
+}
+打印hehe
+
+例4：判断一个数是否是奇数，打印
+int main ()
+{
+	int i = 1;
+  	while ( i <= 100 )
+    {
+      if ( i%2 == 1 ) // !=0也可以
+        printf("%d ", i);
+      i++;
+    }
+}
+写法2：避开了判断，这种是利用了计算机的特性
+int main () 
+{
+  int i = 1;
+  while ( i <= 100 )
+  {
+      printf("%d ", i);
+      i+=2;
+  }
+}
+
+switch
+  switch (整型表达式)
+  {
+	语句项；
+     case 整型常量表达式：
+       	语句；
+  }
+例1：
+switch (day)
+{
+  case 1:
+    printf("工作日 \n");
+    break;
+  case 2:
+    printf("工作日 \n");
+    break;
+  case 3:
+    printf("工作日 \n");
+    break;
+  case 4:
+    printf("工作日 \n");
+    break;
+  case 5:
+    printf("工作日 \n");
+    break;
+  case 6:
+    printf("休息日 \n");
+    break;
+  case 7:
+    printf("休息日 \n");
+    break;
+}
+优化：
+switch (day)
+{
+  case 1:
+  case 2:
+  case 3:
+  case 4:
+  case 5:
+    printf("工作日 \n");
+    break;
+  case 6:
+  case 7:
+    printf("休息日 \n");
+    break;
+}
+
+注：
+  1. 整型表达式 整型常量表达式
+  2. break跳出switch，若不写，一定注意代码逻辑
+  3. 代码简化，充分利用不写break，顺序执行类似逻辑
+  4. default后面也加上break，给后人方便，无强制顺序要求，一般最后
+  
+例2：
+int n = 1;
+int m = 2;
+switch (n)
+{
+    case 1: m++; 3
+    case 2: n++; 2
+    case 3: 
+        switch (n)
+         {
+            case 1: n++; 
+            case 2: m++; n++; break; 4 3
+         }
+    case 4:
+        m++; 5
+        break;
+    default: 
+        break;
+}
+printf("m = %d, n = %d\n", m, n); // 5 3
+```
+
+###  2. 循环结构
+
+```c
+循环语句：
+while for do...while 
+
+while ( 表达式 )
+  循环语句；
+直到表达式为假了，然后循环就不执行了
+break: 用于终止本层循环，注：多层嵌套循环要多个break
+continue: 用于跳过本次循环
+
+例1：
+基础版本：
+int i = 1;
+while ( i <= 10 )
+{
+	printf("%d ", i);
+  	i++;
+}
+变式1：
+int i = 1;
+while ( i <= 10 )
+{
+  if ( i == 5 )
+    break;
+  printf("%d ", i);
+  i++;
+}
+// 1 2 3 4
+// break直接终止结束循环了，不会跳判断处
+变式2：
+int i = 1;
+while ( i <= 10 )
+{
+  if ( i == 5 )
+    continue;
+  printf("%d ", i);
+  i++;
+}
+// 1 2 3 4 死循环
+// continue，然后跳到判断处，由于一直是5，一直continue，死循环，因为i++在continue的后面！！！遇到continue，跳过后面所有代码，开始下一轮
+变式3：
+int i = 1;
+while ( i <= 10 )
+{
+  i++;
+  if ( i == 5 )
+    continue;
+  printf("%d ", i);
+}
+// 1 2 3 4 6 7 8 9 10
+
+例2：
+int main ()
+{
+  int ch = 0;
+  while ( (ch = getchar()) != EOF )
+    putchar(ch);
+}
+// getchar接收键盘一个字符，直到获取到EOF才会停止(ctrl + z，本质是一个-1)
+// 这些输入函数，计算机中有个输入缓冲区，输入函数接收数据时候，会把数据放入。当输出的时候，就去输入缓冲区拿
+// \n ascii -10
+
+例3：
+0-9输出，其他不会输出
+int main ()
+{
+  while ( (ch=getchar()) != EOF )
+  {
+    if ( ch < "0" || ch > "9" )
+      continue;
+    putchar(ch);
+  }
+}
+
+for循环----------
+while代码变量与循环体相对比较分散 
+for ( 表达式1；表达式2；表达式3 ) 
+{
+    循环语句 
+}
+建议：
+1.不可在for循环体内修改循环变量，防止for循环失去控制
+2. 建议for语句的循环控制百度的取值采用"前闭后开区间"写法 for(i=0; i<10; i++)10似乎代表了10次
+
+例1：
+for (;;)
+{
+	printf("hehe \n");
+}
+// 死循环
+1. for循环的初始化、调整、判断都可以判断
+2. for循环的判断部分，如果被省略，那判断条件就恒为正  ！！！ 
+
+例2：
+int i = 0;
+int j = 0;
+for ( ; i<10; i++ )
+{
+  for ( ; j<10; j++ )
+  {
+    printf("hehe \n");
+  }
+}
+// 10个hehe
+随便省略的后果
+因为i=0时候，然后j=0 1 2 3  4 5 6 7 8 9 10
+进入i的第二轮的时候，j因为没有初始化，依然是10，初始化代码被放在了最外面全局，所以后续内循环都不执行了
+总之：i第二轮开始，j都没有初始化了
+解决：for ( j=0; j<10; j++ ) {} 加上j=0即可
+
+例3：
+int x, y;
+for ( x=0,y=0; x<2 && y<5; ++x,y++ )
+{
+    printf("hehe\n");
+}
+// 2个hehe 
+这里是2个循环变量
+
+例4：要循环多少次
+int main ()
+{
+    int i = 0;
+    int k = 0;
+    for (int i = 0,k = 0; k = 0; i++,k++)
+    {
+        k++;
+    }
+}
+// 0次
+第一次k=0，判断条件就是0，是假，不会进入循环
+这里不是k==0，是k=0
+若是k=1，就是非0了，是真，死循环
+
+do...while  --------------
+例1：
+int i = 1;
+do
+{
+    printf("%d ", i);
+    i++;
+}
+while (i <= 10);
+变式1：
+int i = 1;
+do
+{
+    if ( i == 5 )
+        break;
+    printf("%d ", i);
+    i++;
+}
+while (i <= 10);
+// 1 2 3 4
+变式2：
+int i = 1;
+do
+{
+    if ( i == 5 )
+        continue;
+    printf("%d ", i);
+    i++;
+}
+while (i <= 10);
+// 1 2 3 4 死循环
+```
+
+### 练习题-1 前n个的的n的阶乘的和
+
+```c
+解1：
+int main ()
+{
+  int i = 0;
+  int n = 0;
+  int sum = 0;
+  for ( n=1; n<=10; n++ )
+  {
+    for ( i=1; i<=n; i++ )
+    {
+      ret *= i;
+    }
+    sum += ret;
+  }
+}
+找出问题？
+ret第二次后没有初始化，上一次的就被乘在里面了
+而且，这个代码效率不高，重复上次阶乘的计算了
+类似递归
+
+优化1：
+int main ()
+{
+  int i = 0;
+  int n = 0;
+  int sum = 0;
+  for ( n=1; n<=10; n++ )
+  {
+    ret *= n;
+    sum += ret;
+  }
+}
+上一次的阶乘被保存在ret中，后面继续使用
+```
+
+### 练习题2-有序数组中找一个数字
+
+```c
+解1：
+int arr[] = { 1,2,3,4,5,6,7,8,9,10 };
+int k = 7;
+int sz = sizeof(arr) / sizeof(arr[0]);
+int i = 0;
+
+for ( i=0; i<sz; i++ )
+{
+  if ( k == arr[i] )
+  {
+    printf("ok %d \n", i);
+    break;
+  }
+}
+if ( i == sz )
+{
+  printf("找不到 \n");
+}
+
+解2：
+int arr[] = { 1,2,3,4,5,6,7,8,9,10 };
+int k = 7;
+int sz = sizeof(arr) / sizeof(arr[0]);
+int left = 0;
+int right = sz - 1;
+
+while ( left <= right )
+{
+  int mid = (left + right) / 2;
+  
+  if ( arr[mid] > k )
+  {
+    right = mid -1;
+  }
+  else if ( arr[mid] < k )
+  {
+    left = mid + 1;
+  }
+  else 
+  {
+    printf("找到了 %d \n". mid);
+    break;
+  }
+}
+if ( left > right )
+{
+  printf("找不到 \n");
+}
+```
+
+### 练习题3-中间向两边
+
+```c
+效果：  中间向两边 
+welcome to bit!!! 
+w###############！
+we#############!!
+wel###########!!!
+  
+int main ()
+{
+  char arr1[] = "welcome to bit!!! !!!";
+  char arr2[] = "#####################";
+  int left = 0;
+  // int right = sizeof(arr1) / sizeof(arr[0]) - 2;
+  int right = strlen(arr1) - 1;
+  
+  while ( left <= right )
+  {
+    arr2[left] = arr1[left];
+    arr2[right] = arr1[right];
+    printf("%s \n", arr2);
+    Sleep(1000); // // 方便看 延迟一秒  #include <windows.h>
+    system("cls"); // 执行系统命令的一个函数 cls 清空屏幕 这样看着效果明显
+    
+    left++;
+    right--;
+  }
+}
+```
+
+### 练习题4-密码输入
+
+```c
+int i = 0;
+char password[20] = { 0 };
+for ( i=0; i<3; i++ )
+{
+  printf("%请输入密码：>");
+  scanf("%s", password);
+  
+  if ( password == "123456" )
+  {
+    printf("登录成功 \n");
+    break;
+  }
+  else 
+  {
+    printf("密码错误 \n");
+  }
+}
+if ( i == 3 )
+  printf("三次密码均错误，退出程序 \n");
+
+// 无论输入对错，都会打印三次密码均错误，退出程序 
+分析：
+1. ==不能用来比较两个字符串是否相等 strcmp(password, "123456") == 0 
+
+```
+
+
+
 ## (三) 操作符
 
 ### 1. 算术操作符
