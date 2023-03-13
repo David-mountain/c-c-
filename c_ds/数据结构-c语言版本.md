@@ -67,9 +67,10 @@ SequenList* InitSeq ()
 	SequenList* pList = NULL;
   	pList = (SequenList*)malloc(sizeof(SequenList));
   	if ( pList != NULL )
-    	pList->last = 0;
-  
-  	return pList;
+    {
+      pList->last = 0;
+      return pList;
+    }
 }
 ```
 
@@ -134,7 +135,7 @@ int LocateElemSqList (SequenList* pList, ElemType key)
 int InsertElemSqList (SequenList* pList, ElemType x, int k)
 {
 	int j;
-  	if ( pList->last >= LIST_SIZE )
+  	if ( pList->last >= LIST_SIZE ) // pList->last+1 > LIST_SIZE
     	return FALSE;
   	if ( k<0 || k>(pList->last) )
       	return FALSE;
@@ -285,11 +286,11 @@ LinkListNode* GetLinkListNode (LinkListNode* pHead, int pos)
   
   LinkListNode* p = pHead;
   int j = 0;
-  while ( j<pos && p->pNext != NULL )
+  while ( j<pos && p->pNext!=NULL )
   {
     p = p->pNext;
     j++;
-  }
+  } // 这里可转成for，但是多用while
   // 这里还需要加一个判断，万一p->pNext就结束了
   if ( pos == j ) 
     return p;
@@ -335,11 +336,12 @@ while (p != NULL)
 // 给你一个顺序表数据，这里用数组存放
 // q指针始终指向最后一个元素
 // p始终指向最新插入的元素
+// p新q尾 (q初始化是头节点，可以改不？) 似乎也能理解头节点是尾元素
 LinkListNode* Create_Rear_LkList (ElemType arr[], int length)
 {
   LinkListNode *pHead=NULL, *p=NULL, *q=NULL;
   pHead = (LinkListNode*)malloc(sizeof(LinkListNode));
-  pHead && (q = pHead);
+  pHead && (q = pHead); //初始化时 可以理解头节点是最后一个结点
   
   for ( int i=0; i<length; i++ )
   {
@@ -352,7 +354,7 @@ LinkListNode* Create_Rear_LkList (ElemType arr[], int length)
      q = p;     
     }
   }
-  p && (p->pNext = NULL);
+  q && (q->pNext = NULL); // 这里p q都可以，都是指向最后一个元素
   return pHead;
 }
 ```
@@ -382,7 +384,7 @@ LinkListNode* Create_Front1_LkList (ElemType arr[], int length)
       p->data = arr[i];
       p->pNext = q;
       pHead && (pHead->pNext = p);
-      pHead && (q = pHead->pNext); // 更新q指针  
+      pHead && (q = pHead->pNext); // 更新q指针  q = p;更简单些
     }
   }
   
@@ -418,6 +420,10 @@ LinkListNode* Create_Front2_LkList (ElemType arr[], int length)
   }
   else 
     return NULL;
+  // 优化这里:
+  // if ( pHead )
+  //   pHead->pNext = q;
+  // return pHead;
 }
 ```
 
@@ -496,7 +502,7 @@ LinkListNode* Delete_i_LkList (LinkListNode* pHead, int i)
 void ShowLkList (LinkListNode* pHead)
 {
 	LinkListNode* p = pHead->pNext;
-  	while ( p != NULL )
+  	while ( p != NULL ) // p不为空 不是pHead
     {
       printf(" %d", p->data);
       p = p->pNext;
@@ -961,21 +967,27 @@ int main ()
 #### 创建
 
 ```c
+// 这采用尾插法，头节点也可算最后一个结点
+// q指向最后一个结点，初始化时候是头节点
+// 最后需要最后一个元素pNext指针指向头节点
+// 返回尾指针
 LinkCircleListNode* Create_Circle_LkList (int ar[], int length)
 {
-  LinkCircleListNode *head, *p, *q;
-  head = (LinkCircleListNode*)malloc(sizeof(LinkCircleListNode));
-  q = head;
+  LinkCircleListNode *pHead=NULL, *p=NULL, *q=NULL;
+  pHead = (LinkCircleListNode*)malloc(sizeof(LinkCircleListNode));
+  pHead && (q = pHead);
   
   for ( int i=0; i<length; i++ )
   {
     p = (LinkCircleListNode*)malloc(sizeof(LinkCircleListNode));
     p->data = arr[i];
-    q->pNext = p;
-    q = p;
+    q && (q->pNext = p);
+    q && (q = p);
   }
-  p->pNext = head;
+  
+  pHead && p && (p->pNext = pHead);
   return p;
+  // if ( pHead && q ) q->pNext = pHead;
 }
 ```
 
@@ -987,11 +999,33 @@ void ShowCircleLkList (LinkCircleListNode* pRear)
 	LinkCircleListNode* p = pRear->pNext;
   	p = p->pNext;
   
+  // p==头节点 元素遍历完了 跳出循环
   	while ( p != pRear->pNext )
     {
       printf("%d\n", p->data);
       p = p->pNext;
     }
+}
+```
+
+#### 测试
+
+```c
+int main ()
+{
+  int arr[] = { 8,7,9,4,5,12,4,2,6,16,1,2,3 };
+      int sz = sizeof(arr) / sizeof(arr[0]);
+      LinkCircleListNode* pCircle = Create_Circle_LkList(arr, sz);
+      ShowCircleLkList(pCircle);
+
+      int arr2[] = { 99,88,77,55,66,33,55,22 };
+      int sz2 = sizeof(arr2) / sizeof(arr2[0]);
+      LinkCircleListNode* pCircle2 = Create_Circle_LkList(arr2, sz2);
+      ShowCircleLkList(pCircle2);
+
+  // 合并两个链表
+      LinkCircleListNode* pCircle3 = Connect_Circle_LkList(pCircle, pCircle2);
+      ShowCircleLkList(pCircle3);
 }
 ```
 
@@ -1006,10 +1040,10 @@ void ShowCircleLkList (LinkCircleListNode* pRear)
 // rb->pNext始终指向的是原b链表的头节点
 LinkCircleListNode* Connect_Circle_LkList (LinkCircleListNode* ra, LinkCircleListNode* rb)
 {
-  LinkCircleListNode* p = ra->pNext;
-  ra->pNext = rb->pNext->pNext;
-  free(rb->pNext);
-  rb->pNext = p;
+  LinkCircleListNode* p = ra->pNext; // 保存第一个链表的头节点
+  ra->pNext = rb->pNext->pNext; // 第一个链表尾部指向 第二个链表的第一个元素
+  free(rb->pNext); 
+  rb->pNext = p; // 第二个链表的尾元素指向第一个链表的头节点
   
   return rb;
 }
@@ -1048,7 +1082,7 @@ int main ()
 }
 ```
 
-#### 插入
+#### 插入？
 
 ```c
 void Insert_Before_DL (DLinkListNode* p, int x)
@@ -1082,6 +1116,7 @@ DLinkListNode* Delete_DL (DLinkListNode* ptr)
 
 ```c
 int main(void) {
+    // 双向链表的初始化
 	DLinkListNode x;
 	DLinkListNode *head;
 	DLinkListNode *ptr;
@@ -1092,7 +1127,7 @@ int main(void) {
 
 	Insert_Before_DL(ptr, 1);
 	Insert_Before_DL(ptr, 2);
-	DLinkListNode* p,*q;
+	DLinkListNode *p,*q;
 	p = &x;
 	while (p != NULL) {
 		printf("%d\n", p->data);
@@ -1212,8 +1247,9 @@ int main ()
 Bool init (SeqStack* pStack)
 {
   pStack->top = 0;
-  return 1;
+  return TRUE;
 }
+// 我不是很理解这里没有申请内存？之前顺序表都申请了
 ```
 
 #### 判空
@@ -1230,12 +1266,13 @@ BOOL isEmpty (SeqStack* pStack)
 ```c
 BOOL pushStack (SeqStack* pStack, ElemType x)
 {
-  if ( pStack->top == stackSize )
+  if ( pStack->top + 1 > stackSize )
   {
     printf("空间溢出\n");
     return FALSE;
   }
-  pStack->top = pStack->top + 1;
+  // ♥：先增加top，然后下标访问
+  pStack->top++;
   pStack->stack[pStack->top] = x;
   return TRUE;
 }
@@ -1249,12 +1286,12 @@ ElemType popStack (SeqStack* pStack)
   ElemType temp;
   if ( pStack->tpo == 0 )
   {
-    printf("当前是空栈\n");
+    printf("当前是空栈 \n");
     return -1;
   }
   
   temp = pStack->stack[pStack->top];
-  pStack->top = pStack->top - 1; // 逻辑上的出栈
+  pStack->top--; // 逻辑上的出栈
   return temp;
 }
 ```
@@ -1264,14 +1301,44 @@ ElemType popStack (SeqStack* pStack)
 ```c
 BOOL GetSeqStack (SeqStack* s, ElemType* data)
 {
+  // 边界判断-是否存在元素
   if ( s->top == 0 )
     return FALSE;
+  
   *data = s->stack[s->top];
   return TRUE;
 }
 ```
 
-#### 题目一-十进制转八进制
+#### 测试
+
+```c
+int main ()
+{
+    // 初始化
+	SeqStack pStack;
+	initSeqStack(&pStack);
+	// 压栈
+	pushStack(&pStack, 300);
+	pushStack(&pStack, 200);
+	pushStack(&pStack, 100);
+	pushStack(&pStack, 3);
+	// 获取栈顶元素
+	int data = 0;
+	getSeqStack(&pStack, &data);
+	printf("栈定元素：%d \n", data);
+	// 出栈
+	int delData = 0;
+	delData = popStack(&pStack);
+	printf("被删除元素：%d \n", delData);
+
+	int data2 = 0;
+	getSeqStack(&pStack, &data2);
+	printf("栈定元素：%d \n", data2);
+}
+```
+
+#### 题目一-十进制转八进制(10->N)
 
 ```c
 void myConv (SeqStack* pStack ,int n)

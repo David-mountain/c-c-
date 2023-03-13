@@ -1,0 +1,85 @@
+#include <stdio.h>
+#include <malloc.h>
+
+#define stackSize 100
+#define TRUE 1
+#define FALSE 0
+typedef int BOOL;
+typedef int Elemtype;
+typedef struct
+{
+	Elemtype stack[stackSize];
+	int top;
+}SeqStack;
+
+// 初始化
+BOOL initSeqStack(SeqStack *pStack)
+{
+	pStack->top = 0;
+	return TRUE;
+
+	/*SeqStack *pStack = NULL;
+	pStack = (SeqStack*)malloc(sizeof(SeqStack*));
+	if ( pStack != NULL )
+		pStack->top = 0;
+	return pStack;*/
+}
+// 判空 
+BOOL isEmpty(SeqStack* pStack)
+{
+	return (pStack->top == 0);
+}
+// 压栈
+BOOL pushStack(SeqStack* pStack, Elemtype k)
+{
+	if ( pStack->top + 1 >stackSize )
+		return FALSE;
+	pStack->top++;
+	pStack->stack[pStack->top] = k;
+	return TRUE;
+}
+// 出栈
+Elemtype popStack(SeqStack* pStack)
+{
+	Elemtype temp;
+	if ( pStack->top == 0 )
+		return -1;
+	temp = pStack->stack[pStack->top];
+	pStack->top--;
+
+	return temp;
+}
+// 获取栈顶元素
+BOOL getSeqStack(SeqStack* stack, Elemtype* data)
+{
+	if ( stack->top == 0 )
+		return FALSE;
+	*data = stack->stack[stack->top];
+	return TRUE;
+}
+
+int main()
+{
+	// 初始化
+	SeqStack pStack;
+	initSeqStack(&pStack);
+	// 压栈
+	pushStack(&pStack, 300);
+	pushStack(&pStack, 200);
+	pushStack(&pStack, 100);
+	pushStack(&pStack, 3);
+	// 获取栈顶元素
+	int data = 0;
+	getSeqStack(&pStack, &data);
+	printf("栈定元素：%d \n", data);
+	// 出栈
+	int delData = 0;
+	delData = popStack(&pStack);
+	printf("被删除元素：%d \n", delData);
+
+	int data2 = 0;
+	getSeqStack(&pStack, &data2);
+	printf("栈定元素：%d \n", data2);
+
+	return 0;
+}

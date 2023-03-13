@@ -1,0 +1,264 @@
+#include <stdio.h>
+#include <malloc.h>
+
+#define TRUE 1;
+#define FALSE 0;
+typedef int Elemtype;
+typedef struct node
+{
+	Elemtype data;
+	struct node* pNext;
+}LinkListNode;
+
+// 初始化
+LinkListNode* InitLinkList(void)
+{
+	LinkListNode *pHead = NULL;
+	pHead = (LinkListNode*)malloc(sizeof(LinkListNode));
+	if ( pHead )
+		pHead->pNext = NULL;
+
+	return pHead;
+}
+// 求长度
+int GetSizeLinkList(LinkListNode* pHead)
+{
+	int n = 0;
+	while ( pHead->pNext )
+	{
+		n++;
+		pHead = pHead->pNext;
+	}
+	return n;
+}
+// 插入-尾插法
+LinkListNode* Create_Rear_LkList(Elemtype arr[], int length)
+{
+	LinkListNode *pHead = NULL, *p = NULL, *q = NULL;
+	pHead = (LinkListNode*)malloc(sizeof(LinkListNode));
+	if ( pHead )
+		q = pHead;
+
+	int i = 0;
+	for (i = 0; i < length; i++)
+	{
+		p = (LinkListNode*)malloc(sizeof(LinkListNode));
+		if (p)
+			p->data = arr[i];
+		if (q)
+		{
+			q->pNext = p;
+			q = p;
+		}
+	}
+	q && (q->pNext = NULL);
+	return pHead;
+}
+// 遍历
+void showLkList(LinkListNode* pHead)
+{
+	LinkListNode *p = pHead->pNext;
+	while ( p != NULL )
+	{
+		printf("%d ", p->data);
+		p = p->pNext;
+	}
+	printf("\n");
+}
+// 取元素-给位置 位序
+LinkListNode* GetLinkListNode(LinkListNode* pHead, int pos)
+{
+	if ( pos <= 0 )
+		return NULL;
+	LinkListNode *p = pHead;
+	int i = 0;
+	while (i < pos && p->pNext != NULL)
+	{
+		p = p->pNext;
+		i++;
+	}
+	if ( i == pos ) // 这里还需要加一个判断，万一p->pNext就结束了
+		return p;
+	else 
+		return NULL;
+}
+// 查位置 给元素
+LinkListNode* LocateLinkList(LinkListNode* pHead, Elemtype objdata)
+{
+	LinkListNode *p = pHead->pNext;
+	while (p != NULL && p->data != objdata)
+	{
+		p = p->pNext;
+	}
+	return p;
+
+	// 和上面不一样的哈 因为p->data != objdata也被加入到了while判断条件中
+	// 除非加上break;
+	//while (p != NULL)
+	//{
+	//	if ( p->data != objdata )
+	//		p = p->pNext;
+	//	else 
+	//		break;
+	//}
+	//return p;
+	// 我思考没有找到呢？返回啥？
+	// 最后都没有找到就是NULL 找到了就是返回指针
+}
+// 删除元素 给定结点的后续结点 返回删除的指针s
+LinkListNode* Delete_After_LkList(LinkListNode* ptr)
+{
+	LinkListNode* dpter = ptr->pNext;
+	ptr->pNext = dpter->pNext;
+	return dpter;
+}
+// 删除元素-给定位置 位序,不是数组没有下标
+LinkListNode* Delete_i_LkList(LinkListNode* pHead, Elemtype pos)
+{
+	// 边界判断-pos
+	if ( pos <= 0 ) return NULL;
+
+	// 边界判断-链表是否为空 !!似乎链表不用像数组那样去思考
+	
+	LinkListNode *ptr = NULL, *qPtr = NULL;
+	if ( pos == 1 )
+		ptr = pHead;
+	else 
+		ptr = GetLinkListNode(pHead, pos-1); //拿到i的前驱结点
+
+	// 遍历到pos 这个思路不对哈 
+
+	if ( ptr!=NULL && ptr->pNext!=NULL )
+		qPtr = Delete_After_LkList(ptr);
+
+	return qPtr;
+}
+// 插元素-给位置-头1
+LinkListNode* Create_Front1_LkList(Elemtype arr[], int length)
+{
+	LinkListNode *pHead=NULL, *p=NULL, *q=NULL;
+	pHead = (LinkListNode*)malloc(sizeof(LinkListNode));
+	if (pHead)
+	{
+		pHead->pNext = NULL;
+		q = pHead->pNext;
+	}
+
+	int i = 0;
+	for (i = length-1; i >= 0; i--)
+	{
+		p = (LinkListNode*)malloc(sizeof(LinkListNode));
+		if (p)
+		{
+			p->data = arr[i];
+			p->pNext = q;
+			pHead && (pHead->pNext = p);
+			pHead && (q = pHead->pNext);
+		}
+	}
+
+	return pHead;
+}
+// 头插法2 给位置
+LinkListNode* Create_Front2_LkList(Elemtype arr[], Elemtype length)
+{
+	LinkListNode *pHead=NULL, *q=NULL, *p=NULL;
+	
+	for (int i = length - 1; i >= 0; i--)
+	{
+		p = (LinkListNode*)malloc(sizeof(LinkListNode));
+		if (p)
+		{
+			p->data = arr[i];
+			p->pNext = q;
+			q = p;
+		}
+	}
+
+	pHead = (LinkListNode*)malloc(sizeof(LinkListNode));
+	if (pHead)
+	{
+		pHead->pNext = q;
+		return pHead;
+	}
+}
+// 头插法3-给位置 
+LinkListNode* Create_Front3_LkList(Elemtype arr[], int length)
+{
+	LinkListNode *pHead=NULL, *p=NULL;
+	pHead = (LinkListNode*)malloc(sizeof(LinkListNode));
+	pHead && (pHead->pNext = NULL);
+
+	for (int i = length - 1; i >= 0; i--)
+	{
+		p = (LinkListNode*)malloc(sizeof(LinkListNode));
+		if (p)
+		{
+			p->data = arr[i];
+			pHead && (p->pNext = pHead->pNext);
+			pHead && (pHead->pNext = p);
+		}
+	}
+
+	return pHead;
+}
+
+
+int main()
+{
+	//LinkListNode *LNode = InitLinkList();
+
+	// 尾插法
+	int arr[] = { 1,3,5,7,9,2,4,6,8,10,99 };
+	int sz = sizeof(arr) / sizeof(arr[0]);
+	LinkListNode *LHead = Create_Rear_LkList(arr, sz);
+	showLkList(LHead); // 遍历
+
+	// 头插法1
+	//int arr2[] = { 2,3,6,7,1, 9,4,5,10 };
+	//int sz2 = sizeof(arr2) / sizeof(arr2[0]);
+	//LinkListNode* LHead6 = Create_Front1_LkList(arr2, sz2);
+	//showLkList(LHead6); // 遍历
+
+	// 头插法2
+	//int arr2[] = { 2,3,6,7,1, 9,4,5,10,8 };
+	//int sz2 = sizeof(arr2) / sizeof(arr2[0]);
+	//LinkListNode* LHead6 = Create_Front2_LkList(arr2, sz2);
+	//showLkList(LHead6); // 遍历
+	
+
+	// 头插法3
+	//int arr2[] = { 2,3,6,7,1, 9,4,5,10,8 };
+	//int sz2 = sizeof(arr2) / sizeof(arr2[0]);
+	//LinkListNode* LHead6 = Create_Front3_LkList(arr2, sz2);
+	//showLkList(LHead6); // 遍历
+
+	//int len;
+	//len = GetSizeLinkList(LHead); // 长度获取
+	//printf("%d \n", len);
+
+	//LinkListNode *LHead2 = GetLinkListNode(LHead, 1);  // 获取
+	//if ( LHead2 )
+	//	printf("%d \n", LHead2->data);
+	
+	// 查位置(给元素)
+	//LinkListNode *LHead3 = LocateLinkList(LHead, 88);
+	//if ( LHead3 )
+	//	printf("%d \n", LHead3->data);
+	//else 
+	//	printf("空指针 \n");
+
+	// 删除元素(给定结点的后续结点)
+	//LinkListNode* LHead5 = Delete_After_LkList(LHead->pNext);
+	//if ( LHead5 )
+	//	printf("%d \n", LHead5->data);
+	//else 
+	//	printf("空指针 \n");
+	//showLkList(LHead);
+
+	// 按照位置删除
+	//Delete_i_LkList(LHead, 10);
+	//showLkList(LHead);
+
+	return 0;
+}
