@@ -1,6 +1,6 @@
 # c语言知识
 
-## (零) 此总结后面会有大型练手项目
+## (零) 此总结后面会有练手项目
 
 ## (一) 数据类型
 
@@ -4098,5 +4098,242 @@ int main ()
 void Print2 (const struct S* ps) {}
 
 结论：结构体传参的时候，要传结构体的地址。
+```
+
+## (十二) 程序的环境和预处理 
+
+### 1. 程序的环境
+
+```c
+分为：翻译环境 执行环境
+1. 
+总体概述：
+c代码(文本文件)
+test.c -> 编译 链接 -> test.exe -> 运行
+源文件(源程序)          二进制信息(二进制文件) 
+------翻译环境-------> ---执行环境--->
+
+在ANSI C的任何一种实现中，存在两个不同的环境。
+第一种是翻译环境，在这个环境中源代码被转换为可执行的机器指令。
+第二种是执行环境，它用于执行代码。
+
+多个源文件(每个是编译器单独处理) -> 编译器 -> 目标文件(.obj) -> 链接器 (链接库) -> 可执行程序 
+上课的时候就会不断自己回想知识，巩固
+
+test.c                       test.exe 
+---------翻译环境-------------     ------运行环境-------
+---------编译(编译器)--------- obj ----链接(链接器)-----
+--预编译--编译--汇编----------
+  
+2. 翻译环境
+  这三个过程用linux最好讲
+  2.1. 预处理 选项 gcc -E test.c -o test.i 预处理完成之后就停下来了，
+      预处理之后产生的结果都放在test.i文件中
+      是把stdio.h文件全部替换进去了 
+      stdio.h widows在vs安装包中 X86那个目录  inlcude 
+      linux /根目录下 /user/include 中
+      vim /user/include/std 打开 
+      vim /user/include/stdio.h  我打不开呢？
+      1. #inlcude 头文件的包含 文本替换
+      2. 注释删除 使用空格替换 文本删除
+      3. #define 预处理符号 也是这个阶段完成 文本替换
+      总归一句话：这个阶段是文本操作。文本删除 替换
+      
+  2.2 编译 tcc -S test.c 编译完成之后就停下来了，结果存在tset.s中 
+      gcc -S test.i 
+      rm -f test.s 删除 
+      vim test.s 打开 里面放的是汇编指令 
+      这里是把c语言代码 翻译成 汇编指令 
+      (编译原理 词法分析 语法分析 语义分析 符号汇总(后面链接有用 把函数名 全局变量汇总))
+      编译原理((程序员的自我修养-简单入门))- 如何实现一个编译器 构造成词法树  
+
+  2.3. 汇编 gcc -c test.c 汇编之后就停下来了，结果存在test.o中 
+      gcc -c test.s 转成test.o文件了
+      vim test.o 打开 但是看不懂 都是二进制指令 我打不开呢？
+      1. 形成符号表
+          int Add (int x, int y)
+          {
+              return x + y;
+          }
+          Add 0x100 函数也是有地址的 类似这样形成符号表
+          Sub 0x??? 类似形成一张表
+      2. 汇编指令 -> 二进制指令 ---test.o 
+
+3. 运行环境
+  链接：
+      形成 test.exe 
+      1. 合并段表 
+          比如这里有多个.o文件，需要链接在一起
+          一个文件，会分成几个段，各自的段放对应类型的内容 elf文件格式
+          多个文件，合并，就是对应的段数据合并在一起，这就是合并段表
+          最终生成.exe文件 
+          如果，你把对应的函数注释了，符号表没有这个函数了,程序运行，就会报错，链接错误。
+          报错信息：LNK 无法解析的外部符号 
+      2. 符号表的合并和符号表的重定位
+
+  vim攻略： coolshell.cn/articles/5426.html 
+
+  运行时：
+      1. 程序必须载入内存中。在有操作系统的环境中，一般由OS完成，在独立的环境中，程序的载入必须由手工安排，
+          也可能是通过可执行代码置入只读内存来完成
+      2. 程序的执行便开始。接着便调用main函数
+      3. 开始执行程序代码，这个时候程序将使用一个运行堆栈，存储函数的局部变量和返回地址，
+          程序同时也可以使用静态内存，存储于静态内存中的变量在程序的整个执行过程一直保留它们的值
+      4. 终止程序，正常终止main函数，也可能时意外终止
+
+    推荐-<程序员的自我修养>
+```
+
+### 2.  围绕预编译
+
+```c
+1. define 
+#define MAX 100 这是你自己定义的符号 不叫预定义符号
+语言本身已经定义好的符号 - 预定义符号 
+int main ()
+{
+    printf("%s \n", __FILE__); 所在文件绝对路径
+    printf("%d \n", __LINE__); 53行 代码所在的行数 
+    printf("%s \n", __DATE__); 日期 
+    printf("%s \n", __TIME__); 时间 
+    // 未来你想看代码什么时候执行的，就会用到，日志打印
+
+    // 写日志文件 查看日志文件 
+    int i = 0;
+    int arr[10] = { 0 };
+    FILE* pf = fopen("log.txt", "w");
+    for (i=0; i<10; ++i)
+    {
+        arr[i] = i;
+        fprintf(pf, "file:%s line:%d date:%s time:%s i=%d \n",
+        __FILE__, __LINE__, __DATE__, __TIME__, i);
+
+        printf("%s \n", __FUNCTION__); main 所在函数名字 
+    }
+    fclose(pr);
+    pf = NULL;
+    for (i=0; i<10; ++i)
+    {
+        printf("%d ", arr[i]);
+    }
+}
+
+__STDC__ 严格遵守ansi c 这个就是1，反之未定义 
+vs不遵守，linux严格遵守了的
+
+加不加分号呢？
+#define MAX 100
+#define STR "hehe"
+printf("%s \n", STR); 
+
+#define reg register 
+reg int a;
+
+#define do_foreever for(;;)
+do_foreever;
+
+加不加分号呢？ 尽量不要加分号 
+#define MAX 100;
+int main ()
+{
+    int a = MAX; 如果上面加了分号，这里就是;;两个分号了  
+        int a = 100;;
+    printf("%d\n", MAX); 这样语法就报错了 
+        printf("%d\n", 100;);
+}
+报错，是替换之后的报错，预编译之后的错误
+尽量不要加分号。
+
+#define 定义宏
+#define机制包括了一个规定，允许把参数替换到文本中，
+这种实现通常称为宏或者定义宏
+
+#define SQUARE(X) X*X 
+int main ()
+{
+    int ret = SQUARE(5);
+                5*5 
+
+    int ret = SQUARE(5 + 1);
+    printf("%d \n", ret); 11 ?
+        5+1*5+1 = 11 
+        如何解决这个问题呢？
+        #define SQUARE(X) (X)*(X) 即可
+    所以，在写宏的时候，如果可能有优先级问题，最好加一个()
+}
+
+#define DOUBLE(X) X+X 
+int main ()
+{
+    int a = 5;
+    int ret = 10 * DOUBLE(a);
+        int ret = 10 * a + a;
+                  10 * 5 + 5 
+    printf("%d \n", ret); 55 
+    这个时候你加上() 以为就能解决问题？
+    #define DOUBLE(X) (X)+(X) 结果依然是55 
+        10 * (a) + (a)
+    解决是：把整体括起来
+    #define DOUBLE(X) ((X)+(X)) √ 
+}
+提示：用对于数值表达式进行求值的宏定义都应该用这种方式加上括号，
+避免在使用宏时由于参数中的操作符或邻近操作符之间不可预料的相互作用
+
+注：
+1. 宏参数和#define定义中可以出现其他#define定义的变量，但是对于宏，不能出现递归
+2. 当预处理器搜索#define定义的符号的时候，字符串常量的内容并不被搜索
+
+```
+
+```c
+# ##
+1. #
+void print (int a)
+{
+    printf("the value of a is %d \n", a);
+}
+int main ()
+{
+    int a = 10;
+    int b = 20;
+    // printf("the value of a is %d \n", a);
+    print(a); the value of a is 10
+    print(b); the value of a is 20 这里应该是b是20，不是a了
+}
+函数无法做到，传入a或者b，字符串中打印则是对应的值
+传入a，打印--"a的值是10"
+传入b，打印--"b的值是20"
+  
+咋办？？ 宏
+前置知识：
+    printf("hello world\n");
+    printf("hello " "world\n");
+    printf("hel" "lo " "world\n");
+    打印结果都是一样的，printf会把所有参数字符串，处理成一个
+问题：如何把参数插入到字符串中？
+#define PRINT(X) printf("the value of "#X" is %d\n", X)
+int main ()
+{
+    int a = 10;
+    int b = 20;
+    PRINT(a); "the value of "a" is 10" 合成一个字符串
+    PRINT(b); "the value of "b" is 20" 
+}
+总结：使用#， 把一个宏参数变成对应的字符串
+
+2. ## 
+#define CAT(X, Y) X##Y 
+int main ()
+{
+    // int Class84 = 2023;
+    printf("%d\n", CAT(Class, 84)); 2023 
+    // printf("%d\n", Class##84);
+    // printf("%d\n", Class84);
+}
+然后linxu去验证了。
+gcc test3.c -E > test3.i 
+vim test3.i 
+代码在最后行看见了 替换了class84 
+字符串拼接 差不多
 ```
 
