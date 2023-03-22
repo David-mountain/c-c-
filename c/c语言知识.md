@@ -4337,3 +4337,362 @@ vim test3.i
 字符串拼接 差不多
 ```
 
+```c
+1.
+带副作用的宏参数
+当宏参数在宏的定义中出现超过一次的时候，如果参数才有副作用，那么你在使用这个
+宏的时候就可能出现不可预测的后果。副作用就是表达式求值的时候出现的永久性结果。
+例：
+x+1; 不带副作用
+x++; 带有副作用 
+MAX宏可以证明具有副作用的参数引起的问题。
+
+例1：
+int main ()
+{
+    int a = 10;
+    
+    int b = a + 1; /a变成了1
+    int b = ++a;   /a变成了2
+    这两句代码，对于b没有变化，但是对于a来说，就发生了变化
+}
+
+例2：
+#define MAX(X, Y)  (X)>(Y)?(X):(Y)
+int main ()
+{
+    int a = 10;
+    int b = 11;
+    // int max = MAX(a, b);
+    // printf("%d \n", max); 11 
+
+    int max = MAX(a++, b++); 有副作用了
+     printf("%d \n", max); ? 12 
+     printf("%d \n", a);   ? 11
+     printf("%d \n", b);   ? 13 
+    明确：宏是替换进去的，不是算好的
+    ((a++)>(b++) ? (a++) : (b++))
+    10>11 ? 12(没有执行这个代码，因为执行了:后面的代码) : 13 
+
+    注： a>b ? a : b 如果是a<b,那？后面代码没有执行的
+    和if else 一个道理。
+}
+
+例3：
+宏和函数的对比 ？
+int Max (int x, int y)
+{
+    return (x > y ? x : y);
+}
+
+#define MAX(X, Y) ((X)>(Y)?(X):(Y))
+
+int main ()
+{
+    int a = 10;
+    int b = 20;
+    int max = Max(a, b);
+    max = MAX(a ,b);
+}
+
+例4：
+函数好，宏好？
+int main ()
+{
+    float c = 3.0f;
+    float d = 4.0f;
+
+    int max = Max(c, d); 但是函数形参是整型，这传入浮点型 类型不匹配
+
+    max = MAX(c, d); 宏 没有这个问题，是替换进去的，和类型无关的  
+        宏更加灵活一点
+}
+转到反汇编，看这个代码。
+调用Max函数的时候，29句汇编代码 才回来。函数在调用的时候，会有函数调用和返回的开销
+
+宏的时候，预处理阶段就完成了替换，就不到十句话。
+没有函数调用和返回的开销。
+
+使用宏原因有二：
+1. 用于调用函数从函数返回的代码可能比实际执行这个小型计算工作所需要的时间更多。
+所以宏比函数在程序的规模和速度方面更胜一筹
+2. 更为重要的是函数的参数必须声明为特定的类型。所以函数只能在类型合适的表达式上使用。
+反之这个宏可以适用于整型 长整型 浮点型等可以用于>来比较的类型。
+宏是类型无关的。
+
+宏相比函数劣势的地方：
+1. 每次使用宏的时候，一份宏定义的代码插入到程序中，除非宏比较短，否则可能大幅增加代码长度
+2. 宏是没法调试的
+3. 宏由于类型无关，不够严谨
+4. 宏可能带来运算符优先级的问题，导致容易出现不可预测的错误
+
+例5：
+宏有时候可以做到函数做不到的事情。比如：宏的参数可以出现类型，但是函数做不到。
+#define SIZEOF(type) sizeof(type)
+int main ()
+{
+    int ret = SIZEOF(int);
+    printf("%d \n", ret); 4 
+}
+
+#define MALLOC(num, type) (type*)malloc(num * sizeof(type))
+int main ()
+{
+    之前使用malloc 麻烦 
+    int *p = (int*)malloc(10*sizeof(int));
+
+    int *p = MALLOC(10, int); 这样使用更加方便阿 定义一个宏 
+        秒阿 
+}
+
+例6：
+1. 每次使用宏的时候，一份宏定义的代码插入到程序中，除非宏比较短，否则可能大幅增加代码长度
+int main ()
+{
+    TEST(); 如果一个宏是100行代码，这里是问题替换，就是300行代码，而函数则是100行
+    TEST(); 函数只有一份函数体，宏则是全部替换
+    TEST();
+}
+2. 宏是没法调试的
+test.c  -> test.exe可执行文件
+我们最后调试的是最后的.exe可执行文件 
+而预编译早已经结束了，在编译阶段就结束了
+3. 宏是文本替换，不做表达式计算
+函数是参数是一个表达式，是会把表达式求值的，然后传入函数
+而宏不是，直接文本替换的 
+
+宏与函数对比小结：
+代码长度 
+执行速度
+操作符优先级 
+带有副作用 
+参数类型 
+调试 
+递归 
+宏名一般全部大写，函数则是首字母大写  
+c++c99 inline-内联函数 很好解决了宏的不足
+
+例7：
+#unref 移除一个宏
+#define MAX 100 
+int main ()
+{
+    printf("MAX= %d \n", MAX);
+#undef MAX  // 下面就无法使用MAX了
+    printf("MAX= %d \n", MAX);
+
+}
+```
+
+```c
+1. 命令行定义
+执行某些命令的时候 加一些参数
+许多C的编译器提供了一种能力，允许在命令行中定义符号，用于启动编译过程。
+例：
+当我们根据同一个源文件要编译出不同的一个程序的不同版本的时候，这个特性有点用处，
+假定某个程序声明了一个某个长度的数组，如果机器内存有限，我们需要一个很小的数组，
+但是另外一个机器内存大些，我们需要一个数组能够大些 。
+
+linux演示：
+int main ()
+{
+    int arr[SZ] = {0};
+    int i = 0;
+    for (i=0; i<SZ; ++i)
+    {
+        arr[i] = i;
+    }
+    for (i=; i<SZ; ++i)
+    {
+        printf("%d ", arr[i]);
+    }
+}
+vim test.c (不想vim打开,cat test.c 直接查看)
+gcc test.c (直接编译报错)
+gcc test.c -D SZ=10 (SZ设置成了10)(-D 参数，放在编译的时候处理)
+./a.out  
+
+gcc test.c -D SZ=100 (SZ设置成了100)
+./a.out 
+
+2. 条件编译
+在编译一个程序的时候 我们如果要将一条语句(一组语句)编译或者放弃是很方便的。因为我们有条件编译指令。
+选择性的编译，预编译的时候就删除了。
+
+#define DEBUG 1
+#define DEBUG 0
+#define DEBUG  只要定义就生效
+int main ()
+{
+    int arr[10] = {1,2,3};
+    int i = 0;
+    for (i=0; i<10; ++i)
+    {
+        arr[i] = 0;
+#ifdef DEBUG
+        printf("%d ", arr[i]);
+#endif 
+    }
+}
+如何做到的呢？
+预处理的时候，判断DEBUG是否存在，存在就加入编译，反之删除
+
+例1：
+#if 常量表达式
+    // ...
+#endif  
+如：
+#define __DEBUG__ 1
+#if ___DEBUG__
+    // .. 
+#endif 
+
+例2：
+多个分支的条件编译 
+#if 常量表达式 
+    ... 
+#elif 常量表达式 
+    。。。
+#else 
+    ...
+
+#if 1==1
+    printf("haha \n");
+#elif 2==1
+    printf("hehe \n");
+#else 
+    printf("gugu \n");
+#endif 
+
+例3：
+判断是否被定义 
+#if defined(symbol)
+#ifdef symbol 
+
+#if !defined(symbol)
+#ifndef symbol 
+
+#define DEBUG 0 不管0还是其他 只要定义过
+int main ()
+{
+#if defined(DEBUG) 只要定义过 
+    printf("hehe \n");
+#endif 
+
+写法2 
+#ifdef DEBUG 
+    printf("hehe \n");
+#endif 
+
+没有定义它，才参与编译呢？
+#if !defined (DEBUG)
+    printf("hehe \n");
+#endif
+
+写法2 
+#ifdef DEBUG 没有定义 就加入到编译中 
+    printf("hehe \n");
+#endif 
+}
+
+例4：嵌套指令
+#if defined(OS_UNIX)
+    #ifdef OPTION1
+        unix_version_option1();
+    #endif 
+    #ifdef OPTION2
+        unix_version_option2();
+    #endif 
+#elif defined(OS_MSDOS)
+    #ifdef OPTIONS2
+        msdos_version_options2();
+    #endif 
+#endif 
+
+3. 
+#include 指令
+#include 指令可以使另外一个文件被编译，就是包含到我这个程序中被编译。
+  
+#include <stdio.h> 引入库函数 
+#include "add.h"   引入自己程序的头文件
+int main ()
+{
+    int ret = Add(2, 3);
+    printf("hehe \n");
+}
+例1：
+#include <> "" 区别：
+
+本地文件包含：用 ""
+查找策略：先在源文件所在目录下查找，如果该头文件未找到，编译器就像查找库函数头文件一样在标准位置查找头文件。如果找不到就提示编译错误。 
+	vs环境的标准头文件路径：c:\Program Files(x86)\Micorsoft Visual studio\vc\include 注：按照自己的安装路径去找 
+	linux环境的标准头文件的路径：/user/include
+
+库文件包含：<>
+去标准路径下查找，如果找不到就提示编译错误
+
+这样是不是可以说，对于库文件也可以使用""的形式 ？是的，可以
+但是这样做效率低了点，当然这样也不容易区分是库文件还是本地工程文件了
+视频举例了一个大型项目，编译就花了4个小时，所以更得优化
+
+例2：
+重复引入头文件？
+linux演示：vim + gcc预编译命令 查看代码确实复制了3份
+解决方案：条件编译
+写法一：
+test.h 
+#ifndef __TEST_H__
+    #define __TEST_H__
+
+    int Add (int x, int y);
+
+#endif 
+
+写法二：
+#pragma once 加上这句代码即可 现代语法写法 
+int Add (int x, int y);
+
+注：<<高质量c/c++编程指南>>
+参考：<<c语言深度剖析>> 面试笔试的秘密
+
+4. 
+其他预处理命令
+#error 
+#pragma
+#line 
+... 
+```
+
+```c
+面试题
+请编写宏，计算机结构体中某变量相对于首地址的偏移，并给出说明？
+#include <stddef.h>
+struct S 
+{
+    char c1;
+    int a;
+    char c2;
+};
+int main ()
+{
+    printf("%d \n", offsetof(struct S, c1)); 0
+    printf("%d \n", offsetof(struct S, a));  4
+    printf("%d \n", offsetof(struct S, c2)); 8
+}
+
+这道题，就是让你实现一个这样的宏
+视频巧妙思路：
+#define OFFSETOF (struct_name, member_name) (int)&(((struct_name*)0)->member_name) 
+直接思路：
+#define OFFSETOF (struct_name, member_name) ((char*)&struct_name - (char*)&member_name)
+分析：
+偏移量理解
+(int)&(((struct_name*)0)->member_name) ???一脸懵逼
+(int*)k 将k转换为指针类型，这样k变成了一个指向int的指针 
+
+(int)地址 -> ？
+这里取0是因为，方便后面做偏移量的时候，不用减
+
+代码跑不起来？
+```
+
