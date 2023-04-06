@@ -3486,9 +3486,48 @@ atof
 
 ## (六) 数组
 
-## (七) 文件操作
+## (七) 文件操作(stdio.h)
+
+### 7.1 File(stdio.h)
+
+```c
+fopen 
+fclose
+fread
+fwrite
+fseek
+ftell
+
+```
+
+### 7.2 **Formatted input/output**
+
+```c
+printf
+scanf
+fprintf
+fscanf
+fflush
+```
+
+### 7.3 **Character input/output**
+
+```
+gets
+getchar
+puts
+putchar
+```
+
+
 
 ## (八) 动态分配内存
+
+### malloc
+
+### calloc
+
+
 
 ## (九) 练手项目
 

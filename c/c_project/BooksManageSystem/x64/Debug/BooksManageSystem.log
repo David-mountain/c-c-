@@ -1,0 +1,19 @@
+﻿  Book.c
+  BookManage.c
+  List.c
+  main.c
+C:\Users\ghost\Desktop\github-daydayup\c-c-\c\c_project\BooksManageSystem\main.c(20,18): warning C4133: “函数”: 从“UserManage *”到“BookManage *”的类型不兼容
+  Menu.c
+  User.c
+  UserManage.c
+C:\Users\ghost\Desktop\github-daydayup\c-c-\c\c_project\BooksManageSystem\UserManage.c(31,25): warning C4477: “sscanf”: 格式字符串“%d”需要类型“int *”的参数，但可变参数 3 拥有了类型“char *”
+C:\Users\ghost\Desktop\github-daydayup\c-c-\c\c_project\BooksManageSystem\UserManage.c(31,25): message : 请考虑在格式字符串中使用“%hhd”
+C:\Users\ghost\Desktop\github-daydayup\c-c-\c\c_project\BooksManageSystem\UserManage.c(104,18): warning C4477: “scanf”: 格式字符串“%d”需要类型“int *”的参数，但可变参数 3 拥有了类型“char *”
+C:\Users\ghost\Desktop\github-daydayup\c-c-\c\c_project\BooksManageSystem\UserManage.c(104,18): message : 请考虑在格式字符串中使用“%hhd”
+C:\Users\ghost\Desktop\github-daydayup\c-c-\c\c_project\BooksManageSystem\UserManage.c(115,21): warning C4047: “初始化”:“unsigned __int64”与“variant”的间接级别不同
+C:\Users\ghost\Desktop\github-daydayup\c-c-\c\c_project\BooksManageSystem\UserManage.c(126,54): warning C4022: “list_find”: 指针与实参 3 不匹配
+C:\Users\ghost\Desktop\github-daydayup\c-c-\c\c_project\BooksManageSystem\UserManage.c(133,12): warning C4477: “scanf”: 格式字符串“%d”需要类型“int *”的参数，但可变参数 1 拥有了类型“char *”
+C:\Users\ghost\Desktop\github-daydayup\c-c-\c\c_project\BooksManageSystem\UserManage.c(133,12): message : 请考虑在格式字符串中使用“%hhd”
+C:\Users\ghost\Desktop\github-daydayup\c-c-\c\c_project\BooksManageSystem\UserManage.c(145,54): warning C4022: “list_find”: 指针与实参 3 不匹配
+  正在生成代码...
+  BooksManageSystem.vcxproj -> C:\Users\ghost\Desktop\github-daydayup\c-c-\c\c_project\BooksManageSystem\x64\Debug\BooksManageSystem.exe
