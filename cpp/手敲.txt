@@ -1,0 +1,410 @@
+vector
+
+template<typename T>
+class Vector
+{
+	public:
+		typedef T value;
+		typedef T* iterator;
+		typedef T& reference;
+
+	public:
+		MyVector<int len = 0>: m_len(len), m_Data(nullptr), start(nullptr), pos(0)
+		{
+			if (len > 0)
+			{
+				m_Data = new value[len];
+				start = m_Data;
+			}
+		}
+		~MyVector ()
+		{
+			delete[] m_Data;
+		}
+
+		void push_back (const value& v)
+		{
+			if (m_len != pos)
+			{
+				*(start + pos) = v;
+				++pos;
+			}
+			else 
+			{
+				cout << "越界了" << endl;
+			}
+		}
+
+		inline value pop_back ()
+		{
+			--pos;
+			return *(start + pos);
+		}
+
+		int size ()
+		{
+			return this->m_len;
+		}
+
+		iterator begin ()
+		{
+			return this->start;
+		}
+
+		iterator end ()
+		{
+			return this->start + pos;
+		}
+
+		value operator[] (int n)
+		{
+			if (n < pos)
+				return *(start + n);
+			else 
+				cout << "数组越界了" << endl;
+		}
+
+	protected:
+		iterator m_Data;
+		iterator start;
+		int m_len;
+		int pos;
+}
+
+int main ()
+{
+	MyVector<int> v1(10);
+	for (int i=0; i<v1.size(); ++i)
+		v1.push_back();
+
+	for (MyVector<int>::iterator it=v1.begin(); it!=v1.end(); it++)
+	{
+		cout << *it << " ";
+	}
+}
+
+、、1. 写一个函数，给它数组的起点和终点，打印出该段的所有数字
+template<typename T>
+void PrintVec(T begin, T end)
+{
+	while (begin != end)
+	{
+		cout << *begin << endl;
+		++begin;
+	}
+}
+int v[5] = { 1,2,3,4,5 };
+PrintVec(v, v + 5);
+
+、、2. 写一个函数，给它一个链表的起点和终点，打印出链表内的所有节点
+因为是链表了，不能用指针++了，离散的
+
+template<typename T>
+void PrintList<T begin, T end>
+{
+	while (begin != end)
+	{
+		cout << begin->val << endl;
+		begin = begin->next;
+	}
+}
+-----
+// 写一个简单的list 双向链表
+//节点类
+template<typename T>
+struct List_Node
+{
+	List_Node<T>* prev;
+	List_Node<T>* next;
+	T val;
+};
+//List 
+template<typename T>
+class MyList // struct 也行
+{
+	typedef List_Node<T>* pointer;
+
+public: // 如果是class 这里必须加上 strcut可以不加
+	MyList()
+	{
+		node = new List_Node<T>;
+		node->next = node;
+		node->prev = node;
+	}
+
+	pointer begin()
+	{
+		return node->next;
+	}
+
+	pointer end()
+	{
+		return node;
+	}
+
+	void insert(pointer position, T val)
+	{
+		pointer temp = new List_Node<T>;
+		temp->val = val;
+		temp->next = position->next;
+		temp->prev = position;
+		position->next->prev = temp;
+		position->next = temp;
+	}
+
+	void erase(pointer position)
+	{
+		position->next->prev = position->prev;
+		position->prev->next = position->next;
+	}
+
+	void push_back(T val)
+	{
+		insert(node->prev, val);
+	}
+
+	pointer pop_back()
+	{
+		pointer temp = node->prev;
+		erase(node->prev);
+		return temp;
+	}
+
+private:
+	pointer node; // 链表结尾位置
+};
+
+template<typename T>
+void printList(List_Node<T>* begin, List_Node<T>* end)
+{
+	while (begin != end)
+	{
+		cout << begin->val << endl;
+		begin = begin->next;
+	}
+}
+int main()
+{
+	int v[5] = { 1,2,3,4,5 };
+	MyList<int> list;
+	list.push_back(10);
+	list.push_back(20);
+	list.push_back(30);
+	list.push_back(40); 
+	printList(list.begin(), list.end());
+	cout << "----------------" << endl;
+	List_Node<int>* p = list.pop_back();
+	printList(list.begin(), list.end());
+
+	return 0;
+}
+
+、、3. 写一个函数，既能打印数组和打印链表
+迭代器：最基本的作用，就是连接容器和算法的桥梁
+遍历它们的方式是不一样的，方式就是加一个中间层，软件工程的，比如：
+硬件和应用层，直接建立联系太复杂了，加个中间层OS
+迭代器，就是让算法适用于所有的容器，需要重载++符，和*符
+
+// 写一个简单的list 双向链表
+//节点类
+template<typename T>
+struct List_Node
+{
+	List_Node<T>* prev;
+	List_Node<T>* next;
+	T val;
+};
+// 迭代器
+template<typename T>
+struct List_iterator
+{
+	typedef List_iterator<T> iterator;
+	typedef T value;
+	typedef T& ref;
+	List_Node<T>* node;
+
+	List_iterator(List_Node<T>* node):node (node) {}
+	List_iterator() :node(nullptr) {}
+
+	iterator& operator++ () // i++
+	{
+		node = node->next;
+		return *this;
+	}
+
+	iterator& operator++(int) // ++i 区别加了一个(int) 弹幕说这里反了？？？验证
+	{
+		iterator temp = *this;
+		node = node->next;
+		return temp;
+	}
+
+	iterator& operator-- () // i++
+	{
+		node = node->prev;
+		return *this;
+	}
+
+	iterator& operator--(int) // ++i 区别加了一个(int) 弹幕说这里反了？？？验证
+	{
+		iterator temp = *this;
+		node = node->prev;
+		return temp;
+	}
+
+	bool operator== (iterator & other)
+	{
+		return this->node == other->node;
+	}
+
+	bool operator != (iterator & other)
+	{
+		return this->node != other->node;
+	}
+	iterator* operator-> ()
+	{
+		return this;
+	}
+	ref operator* ()
+	{
+		return node->val;
+	}
+};
+//List 
+template<typename T>
+class MyList // struct 也行
+{
+	typedef List_Node<T>* pointer;
+	typedef List_iterator<T> iterator;
+
+public: // 如果是class 这里必须加上 strcut可以不加
+	MyList()
+	{
+		node = new List_Node<T>;
+		node->next = node;
+		node->prev = node;
+	}
+
+	//pointer begin()
+	iterator begin ()
+	{
+		return node->next; // 隐式： iterator temp(node->next) ???
+	}
+
+	iterator end()
+	{
+		return node;
+	}
+
+	void insert(iterator position, T val)
+	{
+		pointer temp = new List_Node<T>;
+		temp->val = val;
+		temp->next = position.node->next;
+		temp->prev = position.node;
+		position.node->next->prev = temp;
+		position.node->next = temp;
+	}
+
+	void erase(iterator position)
+	{
+		position.node->next->prev = position.node->prev;
+		position.node->prev->next = position.node->next;
+	}
+
+	void push_back(T val)
+	{
+		/*insert(node->prev, val);*/
+		insert(--end(), val);
+	}
+
+	pointer pop_back()
+	{
+		pointer temp = node->prev;
+		//erase(node->prev);
+		erase(--end());
+		return temp;
+	}
+
+private:
+	pointer node; // 链表结尾位置
+};
+// 一个方法 可以多种数据结构的打印
+template<typename T>
+void printContainer(T begin, T end)
+{
+	while (begin != end)
+	{
+		cout << *begin << endl;
+		begin++;
+	}
+}
+
+template<typename T>
+void printList(List_Node<T>* begin, List_Node<T>* end)
+{
+	while (begin != end)
+	{
+		cout << begin->val << endl;
+		begin = begin->next;
+	}
+}
+
+int main()
+{
+	int v[5] = { 1,2,3,4,5 };
+
+	MyList<int> list;
+	list.push_back(10);
+	list.push_back(20);
+	list.push_back(30);
+	list.push_back(40); 
+
+	printContainer(list.begin(), list.end());
+	cout << "----------------" << endl;
+
+	//List_Node<int>* p = list.pop_back();
+	//printContainer(list.begin(), list.end());
+	 printContainer(v, v + 5);
+
+	//PrintVec(v, v + 5);
+
+
+	return 0;
+}
+我有一个问题，重载操作符后，原来的++意思会不会变化呢？
+
+
+--type traits 类型萃取
+算法想知道你的容器数据是什么类型？
+算法会问迭代器五个东西：
+tyepdef size_t 			size_type
+typedef ptrdiff_t 		difference_type
+typedef _Tp value_type
+typedef _Ptr pointer 
+typedef _Ref reference
+
+template <class _Iterator>
+struct iterator_traits
+{
+	typedef typename _Iterator::iterator_category iterator_category;
+	typedef typename _Iterator::value_tpype 	  value_tpype;
+	typedef typename _Iterator::difference_type   difference_type;
+	typedef typename _Iterator::pointer           pointer;
+	typedef typename _Iterator::reference 		  reference;
+};
+传入不同，有所不同
+
+type traits 做啥事？
+相当于一个中介，被调公司，type traits就是干这个事的
+并且返回iterator里面的五个信息 返回给算法
+中间层思想 -- 分层
+
+
+--vector 动态扩容
+
+
+-- 234树 到 红黑树
+
+
+

@@ -25,14 +25,14 @@ char * _strcpy (dest, src)
 char * My_strcpy (char *dest, const char *src)
 {
   char *p = dest;
-  while (*src != '\0')
+  while (*src != '\0') // while (*src)
   {
 	*p = *src;
     p++;
     src++;
     // *p++ = *src++;
   }
-  *p = '\0';
+  *p = '\0'; // 我写成了 "\0" 双引号的 我说怎么一直不对 这里可以 *p = *src;
   return dest;
 }
 // 版本3 microsoft  💪💪💪
@@ -69,16 +69,17 @@ char * strcpy (char *dest, const char *src)
 ### 1.3 strcmp
 
 ```c
+// 思路：循环判断是否相等(注要两者都有值哈) 如果不等，则直接返回两者相减的值
 // 比较两个字符串的比较(根据什么编码格式 ascii码?)
 // 返回：大于1 0 小于1 
 
 // 版本1：
 int My_strcmp (const char* str1, const char* str2)
 {
-  while (*str1 == *str2 && *str1)
+  while (*str1 == *str2 && *str1) // && str2省略了，因为两者相等且str1存在，则str2必存在
     str1++, str2++;
   
-  return (unsigned char)*str1 - (unsigned char)*str2;
+  return (unsigned char)*str1 - (unsigned char)*str2; // 有些汉字等特殊符号，转成无符号
 }
 
 // 版本2：库函数源代码
@@ -122,6 +123,18 @@ char * My_strchr (const char* str, int c)
   }
   return NULL;
 }
+
+demo:	找出字符串中所有这个字符的第几个
+	  char str[] = "This is a sample string";
+	  char * pch;
+	  printf ("Looking for the 's' character in \"%s\"...\n",str);
+	  pch = strchr(str,'s'); // "s is a sample string" 第一次 确实是返回后面的字符串指针
+
+	  while (pch != NULL)
+	  {
+		  printf("found at %lld \n", pch - str + 1);
+		  pch = strchr(pch + 1, 's');
+	  }
 ```
 
 ### 1.5 strlen
@@ -134,6 +147,7 @@ size_t strlen (const char *str)
 {
   if (str == NULL)
     return 0;
+  
   size_t  length = 0;
   while (str[length] != 0)
     length++;
@@ -146,11 +160,12 @@ size_t strlen (const char* str)
 {
   if (str == NULL)
     return 0;
+  
   const char *cp = str;
   while (*cp++)
     ;
   
-  return (cp - str - 1);
+  return (cp - str - 1); // 因为没有计算\0 所以-1了
 }
 
 // 版本3：
@@ -162,6 +177,12 @@ size_t strlen (const char* str)
 // 手机有个公式 
 
 // 版本4：汇编代码
+
+demo:
+  char szInput[256];
+  printf ("Enter a sentence: ");
+  gets (szInput);
+  printf ("The sentence entered is %u characters long.\n",(unsigned)strlen(szInput));
 ```
 
 ### 1.6 strpbrk
@@ -195,6 +216,18 @@ char* My_strpbrk (const char *str, const char *s)
     }
     return NULL;
 }
+
+demo:
+  char str[] = "This is a sample string";
+  char key[] = "aeiou";
+  char * pch;
+  printf ("Vowels in '%s': ",str);
+  pch = strpbrk (str, key);
+  while (pch != NULL)
+  {
+    printf ("%c " , *pch);
+    pch = strpbrk (pch+1,key);
+  }
 ```
 
 ### 1.7 strtok
@@ -373,6 +406,18 @@ n -- 要被复制的字节数。
 
   使用 memcpy 前: abcdefg
   使用 memcpy 后: ***defg
+  
+## 封装
+	void * memcpy (void* pDest, const void* pSrc, size_t nCount)
+  {
+    char *p = (char*)pDest;
+    const char* q = (const char*)pSrc;
+    
+    while (nCount--)
+    {
+		*p++ = *q++;
+    }
+  }
 ```
 
 ### 2.2 memmove
@@ -434,6 +479,19 @@ n -- 要被比较的字节数。
 		printf("str1 等于 str2");
 
 	str2 小于 str1
+	
+	
+## 封装
+	int memcmp (const void* str1, const void* str2, size_t nCount)
+    {
+      const unsigned char *p = (const unsigned char*)str1;
+      const unsigned char *q = (const unsigned char*)str2;
+      
+      while (*p == *q && nCount--)
+        ++p, ++q;
+      
+      return *p - *q;
+    }
 ```
 
 ### 2.4 memchr
@@ -481,6 +539,17 @@ n -- 要被设置为该值的字符数。
 
    This is string.h library function
    $$$$$$$ string.h library function
+   
+## 封装
+	// void * memset (void *str, int c, size_t n) 老师的是char c? 能否存下
+	void * memset (void *str, char c, size_t n)
+   {
+     char* p = (char*)str;
+     while (n--)
+     {
+		*p++ = c;
+     }
+   }
 ```
 
 ## 3. while 

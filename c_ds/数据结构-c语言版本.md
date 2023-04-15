@@ -228,7 +228,7 @@ int main ()
 
 #define TRUE 1
 #define FALSE 0
-typedef int ElemType;
+typedef int ElemType; // 要加分号的
 typedef struct node 
 {
 	ElemType data;
@@ -263,7 +263,7 @@ LinkListNode* InitLinkList (void)
 int GetSizeLinkList (LinkListNode* pHead)
 {
 	int n = 0;
-  	while ( pHead->pNext )
+  	while ( pHead->pNext ) // 直接从首元节点开始
     {
       n++;
       pHead = pHead->pNext;
@@ -341,6 +341,8 @@ LinkListNode* Create_Rear_LkList (ElemType arr[], int length)
 {
   LinkListNode *pHead=NULL, *p=NULL, *q=NULL;
   pHead = (LinkListNode*)malloc(sizeof(LinkListNode));
+  if (!pHead) 
+    return;
   pHead && (q = pHead); //初始化时 可以理解头节点是最后一个结点
   
   for ( int i=0; i<length; i++ )
@@ -348,7 +350,7 @@ LinkListNode* Create_Rear_LkList (ElemType arr[], int length)
     p = (LinkListNode*)malloc(sizeof(LinkListNode));
    if (p)
    	   p->data = arr[i];
-   if (q)
+   if (q) // 是否是一个元素??又存在的必要？
     {
      q->pNext = p;
      q = p;     
@@ -575,7 +577,7 @@ int main ()
 }
 ```
 
-#### 题目一-顺序表逆转
+#### 题目一-顺序表(链表)逆转
 
 ```c
 // 设有一个顺序表，其数据为a,b,c,d,e,f,g，要求将其就地转置为g,f,e,d,c,b,a，要求不能额外开辟内存，顺序表仍然占据原空间。
@@ -631,21 +633,21 @@ LinkListNode* ReverseLkList (LinkListNode* pHead)
   Pointer = Back->pNext;
   Next = Pointer->pNext;
   
-  Pointer->pNext = Back;
+  Pointer->pNext = Back; // 为什么要单轮一次呢？
   Back = Pointer;
   Pointer = Next;
   
   while ( Pointer->pNext != NULL )
   {
-    Next = Pointer->pNext;
+    Next = Pointer->pNext; // 先把后面的节点存起来 不然丢失
     Pointer->pNext = Back;
     Back = Pointer
     Pointer = Next;
   }
   
-  Pointer->pNext = Back;
-  pHead->pNext->pNext = NULL;
-  pHead->pNext = Pointer;
+  Pointer->pNext = Back; // 最后指针停留地方 是最后一个节点 和 倒数第二个节点 需手动指向哈
+  pHead->pNext->pNext = NULL; // 原来的头节点的pNext需要是NULL
+  pHead->pNext = Pointer;  // Pointer是现在的首元节点
   
   return pHead;
 }
@@ -664,6 +666,9 @@ int main ()
   
   return 0;
 }
+
+递归版本：
+
 ```
 
 #### 题目二-一元多项式运算
