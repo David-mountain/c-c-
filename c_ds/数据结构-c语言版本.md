@@ -46,7 +46,7 @@ typedef int ElemType; // 假定线性表的元素类型是整型
 typedef struct 
 {
 	ElemType data[LIST_SIZE];
-  	int last; // 指向最后一个结点的位置
+  	int last; // 指向最后一个结点的位置 个数
 }SequenList;
 SequenList* IPtr;
 
@@ -137,10 +137,10 @@ int InsertElemSqList (SequenList* pList, ElemType x, int k)
 	int j;
   	if ( pList->last >= LIST_SIZE ) // pList->last+1 > LIST_SIZE
     	return FALSE;
-  	if ( k<0 || k>(pList->last) )
+  	if ( k<0 || k>(pList->last-1) )
       	return FALSE;
   
-  	for ( j=pList->last; j>=k; j-- )
+  	for ( j=pList->last; j>=k; j-- ) // 插-倒着 删-正着
     {
       pList->data[j+1] = pList->data[j]; // 缓冲区溢出？
     }
@@ -667,8 +667,19 @@ int main ()
   return 0;
 }
 
-递归版本：
-
+// 递归版本：
+LinkListNode* ReverseLkList (LinkListNode* pHead)
+{
+	if (pHead == null || pHead.next = null) return pHead; // 最后一个元素就结束了 我说嘛
+  
+  	LinkListNode* newHead = ReverseLkList(pHead.pNext);
+  
+  	// 归的过程中 pHead不断变化 这个过程中我们修改了链接
+  	pHead.next.next = pHead; // 回指 改变链接了
+  	pHead.next = null; // 第一个元素下一个节点指向null
+  
+    return newHead;
+}
 ```
 
 #### 题目二-一元多项式运算
@@ -1110,7 +1121,7 @@ void Insert_Before_DL (DLinkListNode* p, int x)
 DLinkListNode* Delete_DL (DLinkListNode* ptr)
 {
   ptr->prior->next = ptr->next;
-  ptr->next->prior = ptr->prior; // 逻辑上，无法找到ptr了
+  ptr->next->prior = ptr->prior; // 逻辑上，无法找到ptr了 我之前理解错了 可以的
   return ptr;
 }
 ```
