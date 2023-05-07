@@ -504,7 +504,7 @@ LinkListNode* Delete_i_LkList (LinkListNode* pHead, int i)
 void ShowLkList (LinkListNode* pHead)
 {
 	LinkListNode* p = pHead->pNext;
-  	while ( p != NULL ) // p不为空 不是pHead
+  	while ( p != NULL ) // p不为空 不是pHead 或者while (p) {}
     {
       printf(" %d", p->data);
       p = p->pNext;
@@ -624,7 +624,7 @@ int main ()
 ```
 
 ```c
-// 链表实现反转
+// 链表实现反转(三指针)
 LinkListNode* ReverseLkList (LinkListNode* pHead)
 {
   LinkListNode *Pointer, *Next;
