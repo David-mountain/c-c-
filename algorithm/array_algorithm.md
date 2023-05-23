@@ -193,8 +193,6 @@ class Diffrence
 }
 ```
 
-
-
 ### 2.1 370_区间加法
 
 ```c++
@@ -237,51 +235,426 @@ vector<int>& getModifiedArray (int length, vector< vector<int> >& updates)
        return df.result();
     }
 }
-
-
 ```
-
-
 
 ### 2.2 1109_航班
 
 ```c++
 // 思路分析
+// 思路，题意就是一个差分数组
+// 题目说，n是从1开始计数的，而数组索引从0开始的，所以对于输入的三元组(i,j,k)，
+// 数组区间应该对应 [i-1, j-1]
 
-
+// 代码
+vector<int>& corpFlightBookings (int length, vector< vector<int> >& bookings)
+{
+	int m = bookings.size();
+  	if (m > 0)
+    {
+		int n = bookings[0].size();
+      	vector< vector<int> > nums;
+      	nums.resize(m, vector<int>(n)); // 是否+1？暂不
+      	// 构造差分数组
+      	Diffrence df(nums);
+      
+      	for (auto booking : bookings)
+        {
+			int i = booking[0] - 1; // 题目n是从1开始计数的 所以-1
+          	 int j = booking[1] - 1; // 题目n是从1开始计数的 所以-1
+          	 int val = booking[2];   // 值 不需要-1
+          	 df.increment(i, j, val);
+        }
+      
+       return df.result();
+    }
+}
 ```
-
-
 
 ### 2.3 1094_拼车
 
+```c++
+// 思路：
+// 题目没有给差分数组的长度(车站的个数)是多少？但给了数据取值范围。
+// 0 <= trips[i][1] < trips[i][2] <= 1000 
+// 车站从0开始编号，最多到1000，也就是最多有1001个车站，我们就把差分数组长度可以设置成1001，这样涵盖所有车站的编号。
 
+// 代码：
+booloean carPooling (int capacity, vector< vector<int> >& trips)
+{
+	int m = trips.size();
+  	if (m > 0)
+    {
+		int n = trips[0].size();
+      	vector< vector<int> > nums;
+      	nums.resize(1001); 
+      	// 构造差分数组
+      	Diffrence df(nums);
+      
+      	for (auto trip : trips)
+        {
+			int i = trip[1];     // 第 trip[1] 站乘客上车
+          	 int j = trip[2] - 1; // 第 trip[2] 站乘客已经下车
+          						// 即 乘客在车上区间是 [trip[1], trip[2] - 1]
+          	 int val = trip[0];   // 乘客数量
+          	 df.increment(i, j, val);
+        }
+      
+       int[] res = df.result();
+      
+      // 客车自始自种不能超载
+      for (int i = 0; i < res.length; ++i)
+      {
+		if (capacity < res[i])
+          return false;
+      }
+      return true;
+    }
+}
+```
 
+## 三、双指针(快慢)
 
+```c++
+// 双指针技巧主要分两类：左右指针和快慢指针
+// 左右指针：就是两个指针相向而行或者相背而行
+// 快慢指针：就是两个指针同向而行，一快一慢
 
+// 在数组中并没有真正意义上的指针，但我们可以把索引当做数组中的指针，这样也可以在数组中施展双指针
+// 技巧。
+// 数组问题中⽐较常⻅的快慢指针技巧，是让你原地修改数组。
+```
 
+### 3.1 删除有序数组的重复项(简单26)
 
+```c++
+// 思路：排序数组，立马think到双指针，这就是典型的快慢指针阿，不一样就赋值给慢指针，如果是C++，多出的
+// 节点内存就需要释放内存了。
+// 题目要求原地修改。如果你遍历就是O(n^2) 不可能
+// fast slow  
 
+// coding:
+class Solution
+{
+  public:
+  	int removeDuplicates (vector<int>& nums)
+    {
+		int n = nums.size();
+      	 if (n == 0)
+           return 0;
+      	 int fast = 1, slow = 1;
+      	 while (fast < n)
+         {
+           if (nums[fast] != nums[fast - 1])
+           {
+			nums[slow] = nums[fast];
+             ++slow;
+           }
+           ++fast;
+         }
+      	return slow;
+    }
+}
 
+// 时间复杂度：O(n)O(n)，其中 nn 是数组的长度。快指针和慢指针最多各移动 nn 次。
+// 空间复杂度：O(1)O(1)。只需要使用常数的额外空间。
+```
 
+### 3.2 删除排序链表中的重复元素(83)
 
+```c++
+// 思路：同上。
 
+// coding:
+class Solution
+{
+  public:
+  	ListNode* deleteDuplicates (ListNode* head)
+    {
+		if (!head)
+          return head;
+      
+      	 ListNode* cur = head;
+      	 while (cur->next)
+         {
+			if (cur->val == cur->next->val)
+              	cur->next = cur->next->next;
+             else 
+                 cur = cur->next;
+         }
+      	return head;
+    }
+}
 
+```
 
+### 3.3 移除元素(27)
 
+```c++
+// 除了让你在有序数组、链表中去重，题目还可能让你对数组中的某些元素进行原地删除！
 
+// 思路：同上不变
+// 给一个数组和一个val，数组中的val值全部删除。并返回新长度
 
+// coding 
+class Soution
+{
+  public:
+  	int removeElement (vector<int>& nums, int val)
+    {
+		int n = nums.size();
+      	 int left = 0;
+      	 for (int right = 0; right < n; ++right)
+         {
+			if (nums[right] != val)
+            {
+				nums[left] = nums[right];
+              	 ++left;
+            }
+         }
+      	return left;
+    }
+}
 
+// 时间复杂度：O(n)O(n)，其中 nn 为序列的长度。我们只需要遍历该序列至多两次。
+// 空间复杂度：O(1)O(1)。我们只需要常数的空间保存若干变量。
 
+// 双指针优化 因为题目说元素的顺序可以改变 看力扣官方思路，这里不写了 看别人的优化点
+// coding
+class Solution
+{
+  public:
+  	int removeElement(vector<int>& nums, int val)
+    {
+      int left = 0, right = nums.size();
+      while (left < right)
+      {
+		if (nums[left] == val)
+        {
+          nums[left] = nums[right - 1];
+          --right;
+        }
+        else 
+          ++left;
+      }
+      return left;
+    }
+}
 
+// 这样的方法两个指针在最坏的情况下合起来只遍历了数组一次。与方法一不同的是，方法二避免了需要保留的元素的重复赋值操作。
+// 时间复杂度：O(n)O(n)，其中 nn 为序列的长度。我们只需要遍历该序列至多一次。
+// 空间复杂度：O(1)O(1)。我们只需要常数的空间保存若干变量。
+```
 
+### 3.4 移动零(283)
 
+```c++
+// 题目：把数组中的零，挪动到最后，其实就是把0干掉，然后最后的多出的元素位置，填充成0即可。
 
+// coding 
+class Solution
+{
+  public:
+  	void moveZeroes (vector<int>& nums)
+    {
+		int n = nums.size(), left = 0, right = 0;
+      	 while (right < n)
+         {
+           if (nums[right])
+           {
+             swap[nums[left], nums[right]]; // 这里使用的是交换，另外思路是最后处理成0
+             ++left;
+           }
+           ++right;
+         }
+    }
+}
 
+// coding2 
+void moveZeroes (vector<int>& nums)
+{
+  int n = nums.size();
+  int p = removeElement(nums, 0); // 上题的去除元素
+  for (; p < n; ++p)
+    nums[p] = 0;
+}
 
+```
 
+## 四、双指针(左右)
 
+```c++
+// 左右指针的常用算法
+```
 
+### 4.1 二分查找
+
+```c++
+class Solution
+{
+  public:
+  	int binarySearch (vector<int>& nums, int target)
+    {
+      int left = 0, right = nums.length - 1;
+      while (left <= right)
+      {
+		int mid = [right + left] / 2;
+         if (nums[mid] == target)
+           return mid;
+         else if (nums[mid] < target)
+           left = mid + 1;
+         else if (nums[mid] > target)
+           right = mid - 1;
+      }
+      return -1;
+    }
+}
+```
+
+### 4.2 两数之和2(167)
+
+```c++
+// 只要数组有序，就要think到双指针技巧
+// 解法类似二分查找，通过调节left和right就可以调整sum的大小
+// 本题 下标从1开始，题目要求的
+// 数组已有序
+
+// 首先固定第一个数，然后寻找第二个数
+// 利用数组的有序性质，可以通过二分查找的方法寻找第二个数。
+// 为了避免重复寻找，在寻找第二个数时，只在第一个数的右侧寻找。
+// coding: 二分查找
+class Solution
+{
+  public:
+  	vector<int> twoSum (vector<int>& nums, int target)
+    {
+      for (int i = 0; i < nums.size(); ++i)
+      {
+        int low = i + 1, high = nums.size() - 1;
+        while (low <= high)
+        {
+			int mid = (high - low) / 2 + low; ??
+          	 if (nums[mid] == target - nums[i])
+               return [i + 1, mid + 1];
+             else if (nums[mid] > target - nums[i])
+               high = mid - 1;
+          	 else 
+               low = mid + 1;
+        }
+      }
+      return [-1, -1];
+    }
+}
+// 时间复杂度：O(n \log n)O(nlogn)，其中 nn 是数组的长度。需要遍历数组一次确定第一个数，时间复杂度是 O(n)O(n)，寻找第二个数使用二分查找，时间复杂度是 O(\log n)O(logn)，因此总时间复杂度是 O(n \log n)O(nlogn)。
+// 空间复杂度：O(1)O(1)。
+
+// coding2: 双指针
+class Solution
+{
+  public:
+  	vector<int> twoSum (vector<int>& nums, int target)
+    {
+      int low = 0, high = nums.size() - 1;
+      while (low < high)
+      {
+        int sum = nums[low] + nums[high];
+        if (sum == target)
+          return [low + 1, high + 1];
+         else if (sum < target)
+           ++low;
+         else 
+           --high;
+      }
+      return [-1, -1];
+    }
+}
+
+// 时间复杂度：O(n)O(n)，其中 nn 是数组的长度。两个指针移动的总次数最多为 nn 次
+// 空间复杂度：O(1)O(1)。
+```
+
+### 4.3 反转数组 反转字符串(344)
+
+```c++
+// 
+
+// coding:
+class Solution:
+{
+  public:
+  	void reverseString (vector<char>& s)
+    {
+      int n = s.size();
+      for (int left = 0, right = n - 1; left < right; ++left, --right)
+      {
+        swap(s[left], s[right]);
+      }
+    }
+}
+// 时间复杂度：O(N)O(N)，其中 NN 为字符数组的长度。一共执行了 N/2N/2 次的交换。
+// 空间复杂度：O(1)O(1)。只使用了常数空间来存放若干变量。
+```
+
+### 4.4 回文串判断
+
+```c++
+// 回文串：正着 反着 都是一样的字符串 
+// 其实看到这种应该能想到 双指针
+
+// coding:
+boolean isPalinrome (String s)
+{
+  int left = 0, right = s.length() - 1;
+  while (left < right)
+  {
+	if (s.charAt(left) != s.charAt(right))
+      return false;
+    ++left;
+    --right;
+  }
+  return true;
+}
+```
+
+### 4.5 最长回文子串(5)
+
+```c++
+// 思考：找回文串的难点在于，回文串的长度可能是奇数也可以是偶数，解决该问题的核心是 从中心向两端扩散的双指针技巧。
+// 如果回文串的长度为奇数，则它有一个中心字符
+// 如果回文串的长度为偶数，则可以认为它有两个中心字符串
+
+// 辅助工具函数：
+// 在 s 中寻找以 s[l] 和 s[r] 为中心的最长回文串
+String palindrome (String s, int l, int r)
+{
+  while (l >= 0 && r < s.length()
+                && s.charAt(l) == s.charAt(r))
+  {
+    --l; ++r;
+  }
+  // 返回以 s[l] 和 s[r] 为中新的最长回文传串 
+  returm s.substring(l + 1, r);
+}
+// 这样，如果输⼊相同的 l 和 r，就相当于寻找⻓度为奇数的回⽂串，如果输⼊相邻的 l 和 r，则相当于寻找
+// ⻓度为偶数的回⽂串。
+
+// coding:
+String longestPalindrome (String s)
+{
+  String res = "";
+  for (int i = 0; i < s.length(); ++i)
+  {
+    String s1 = palindrome(s, i, i);
+    String s2 = palindrome(s, i, i + 1);
+    // res = longest(res, s1, s2); 分别和s1 s2比较
+    res = res.length() > s1.length() ? res : s1;
+    res = res.length() > s2.length() ? res : s2;
+  }
+  return res;
+}
+
+// 你应该能发现最⻓回⽂⼦串使⽤的左右指针和之前题⽬的左右指针有⼀些不同：之前的左右指针都是从两端
+// 向中间相向⽽⾏，⽽回⽂⼦串问题则是让左右指针从中⼼向两端扩展。
+```
 
 
 

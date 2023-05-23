@@ -1,0 +1,286 @@
+## 文件，最原始的数据库。
+
+## mysql常用命令：
+    show databases;  查看当前有的数据库
+    use 数据库名;     使用数据库
+    create database 数据库名;  创建一个新数据库
+
+## 表的理解：
+    表 table  excel 存储数据的一种方式，不能说是一种数据结构
+    任何一张表都有行和列：行称为数据/记录   列：称为字段 
+    每个字段都有：字段名、数据类型、约束等属性
+    数据类型：字符串、数字、日期等
+
+    show tables;  查看某个数据库下有哪些表
+    mysql -uroot 密码 直接进入了，应该是配置了环境变量
+
+## sql语句的分类：
+    DQL:
+        select ... 
+    DML:
+        insert 增 
+        delete 删
+        update 改
+        主要操作表中的数据data。
+    DDL:
+        数据定义语言
+        凡是带有create drop alter的都是DDL
+        DDL主要操作的是表的结构，不是表中的数据。
+        整列删除等。
+    TCL:
+        事务控制语言
+        包括：
+            事务提交：commit 
+            事务回滚：rollback
+    DCL:
+        数据控制语言
+        例如：
+            授权grant
+            撤销权限revoke 
+
+## 导入提前准备的数据：
+    路径中不要有中文。
+    直接把提前准备好的sql，加载，cmd中 mysql 执行即可。
+    部门 员工 工资表。
+    EMPNO   ENAME     JOB     MGR    HIREDATE SAL COMM DEPTNO 
+    员工编号 员工姓名 工作岗位 上级编号 入职日期 工资 补助 部门编号 
+    DEPTNO DNAME LOC 部门编号 部门名字 地理位置
+    GRADE LOSAL HISAL 工资等级 最低工资 最高工资 
+
+## 不看表数据，只看表的结构：
+    desc 表明；
+
+## 查看mysql的版本号：
+    select version();
+
+## 查看当前使用的是哪个数据库？
+    select database();
+
+## 不见分号不执行，所以可以跨行的哈 
+
+## DQL 简单查询
+    select 字段名 from 表名；
+    忘记了，可以通过desc 表明；查看结构 字段
+    select 字段名1，字段名2 from 表名；
+
+    查所有字段，可以把所有字段都写，也可以* 
+    *缺点：效率低，可读性差
+    开发中不建议，自己玩没事。
+
+## 给查询列起别名
+    select a, b as c from 表名；
+    as起别名：只是将显示的查询 结构列名显示成c，原表列名还是叫b 
+
+    记住：select 语句永远不会进行修改操作的。因为只负责查询。
+    as可以省略吗？ 可以 select a, b c from 表名； 
+    假设起别名的时候，别名里面有空格，怎么办？
+    DBMS看到这样的语句，进行SQL语句的编译，不符合语法，编译报错。
+    select a, b 'x y' from 表名；单引号 双引号均可
+    注意：所有数据库中，字符串统一使用单引号括起来
+    单引号是标配，双引号在oracle中无法使用。但是mysql中可以使用。
+    最好使用单引号。
+
+## 计算员工年薪？工资 * 12
+    select ename, sal * 12 from emp;
+    字段可以使用数据表达式。
+    此时列明显示是 sal * 12 丑，不直观
+    select ename, sal*12 as yearsal from emp;
+    select ename, sal*12 as '年薪' from emp;  别名是中文 需要单引号括起来
+
+## 条件查询
+    条件查询需要用到where语句，必须放到from语句表的后面
+    = <>或！=  <  <=  > >=  between...and.. is null  and or in not like  
+    select 字段1， 字段2，...
+    from 表名 
+    where 条件;
+
+    select empno, ename from emp where sal = 800;
+    select empno, ename from emp where sal != 800;
+    select empno, ename from emp where sal <> 800; 小于号和大于号组成的不等号 小于800大于800 就是不等于800
+    select empno, ename from emp where sal < 800;
+    select empno, ename from emp where sal <= 800;
+    select empno, ename from emp where sal > 800;
+    select empno, ename from emp where sal >= 800;
+    select empno, ename from emp where sal >= 800 and sal <= 2000;
+    select empno, ename from emp where sal between 800 and 2000;
+    使用between，必须遵循左小右大。
+
+    查询哪些津贴补助是空的，null
+    select empno, ename, sal, comm from emp where comm = null; =无法查出来 
+    select empno, ename, sal, comm from emp where comm is null; 必须改成is 
+    数据库中 null不能使用等号使用衡量，需要使用is null因为数据库中的null代表什么也没有，
+    它不是一个值，所以不能使用等号衡量。
+    select empno, ename, sal, comm from emp where comm is not null;
+
+    岗位是经理并且工资大于2500？
+    select empno, ename, job, sal from emp where job = 'MANAGER' and sal > 2500;
+
+    select empno, ename, job from emp where job = 'MANAGER' or job = 'SALESMAN';
+
+    and和or同时出现，有优先级问题：
+    工作大于2500，并且部门编号为10或者20的员工？
+    select * from emp where sal > 2500 and deptno = 10 or deptno = 20;
+    and比or优先级高。以上语句，先执行and,和我们的期望是不一样的
+    select * from emp where sal > 2500 and (deptno = 10 or deptno = 20);
+    如果想让or先执行，加小括号。
+
+    in 
+    select empno, ename, sal, comm from emp where job = 'MANAGER' or job = 'SALESMAN';
+    select empno, ename, sal, comm from emp where job in ('MANAGER', 'SALESMAN');
+    注意：in不是一个区间，in后面根的是一个具体的值。
+    select empno, ename, sal, comm from emp where job in (800, 5000); 是等于800 5000的，不是区间
+
+    like 
+    模糊查询，支持%或下划线匹配
+    % 匹配任意多个字符 
+    下划线：任意一个字符 
+    找出名字中有o的？
+    select ename from emp where ename like '%o%';
+    找出名字以T结尾的？
+    select ename from emp where ename like '%T';
+    找出名字以K开始的？
+    select ename from emp where ename like 'K%';
+    找出第二个字母是A的？
+    select ename from emp where ename like '_A%';
+    找出第三个字母是R的？
+    select ename from emp where ename like '__R%';
+
+    先有一个学生表，找出名字中有_的？
+    select name from t_student where name like '%_%';  _有特殊含义，不对这句 这样都查出来了
+    select name from t_student where name like '%\_%'; 转移，左斜 
+
+## 排序
+    查询所有员工薪资，排序？
+    select ename, sal from emp order by sal; 默认升序
+    select ename, sal from emp order by sal desc; 降序
+    select ename, sal from emp order by sal asc; 升序 
+
+    多个字段排序？按照薪资升序，若一样，按照名字升序
+    select ename, sal from emp order by sal asc, ename asc;
+
+    根据字段的位置也可以排序？
+    select ename, sal from emp order by 2; 2 第二列 不建议开发中写 不健壮  
+    列的顺序是很容易发生改变的。
+
+## 综合案例
+    工资在1250-3000之间的员工信息，要求按照降序排列
+    select 
+        ename, sal from emp 
+    where sal between 1250 and 3000
+    order by 
+        sal desc;
+    关键字顺序不能变。
+    以上的执行顺序是： 1. from 2. where 3. select  4. order by 排序总是在最后
+
+    
+## 函数 
+    数据处理函数/单行处理函数
+    lower upper substr length trim str_to_date date_format format round rand ifnull 
+    单行处理函数特点：一个输入对应一个输出。
+    多行处理函数：多个输入，1个输出
+
+    select lower(ename) from emp; 名字全部小写了
+    select lower(ename) as ename from emp; 显示时 起个别名方便看
+    select uppper(ename) as name from emp;
+    select substr(0, 1) as ename from emp; 不正确
+    select substr(1, 1) as ename from emp; 起始下标从1开始  substr(被截取的字符串，起始下标，截取的长度)
+    查看员工名字第一个字母是A的员工信息？
+    select ename from emp where ename like 'A%';            第一种
+    select ename from emp where substr(ename, 1, 1) = 'A';  第二种
+    首字母大写？
+    select uppper(substr(name, 1, 1)) from t_student;
+    selct substr(name, 2, length(name) - 1) from t_student;
+    select concat(uppper(substr(name, 1, 1)), substr(name, 2, length(name) - 1)) as result from t_student; 
+
+    concat函数进行字符串的拼接：
+    select concat(empno, ename) from emp;
+
+    select length(ename) enamelength from emp;
+
+    trim:
+    select * from emp where ename = '  King'; 无法查到 因为空格原因
+    select * from emp where ename = trim('   King');
+
+    str_to_date 将字符串转换成日期
+    data_format 格式化日期 
+    format 设置千分位 
+
+    round 四舍五入
+    select 字段 from 表名； 
+    select ename from emp;
+    select 'abc' from emp; select后面直接跟 字面量/字面值 
+    emp有多少个数据，就生成多少个'abc' 
+    select 1000 as num from emp;  emp有多少个数据，就生成多少个1000
+    select后跟 某个表的字段名（看成变量），也可以跟字面量、字面值(数据)
+
+    select round(123.567, 1) as result from emp; 
+    123.6 emp内个数据 5被收上去了
+
+    rand()
+    select rand() from emp; 随机数
+    select round(rand()*100.0) from emp; 100以内的随机数
+
+    ifnull 将null转换成一个具体值
+    是空处理函数，专门处理空的
+    在所有数据库中，只有有NULL参与的数学运算，就是NULL
+    年薪：
+    年薪= (月薪 + 月补助) * 12 
+    select ename, (sal + comm) * 12 as yearsal from emp; null参与运算，结果都是null
+    ifnull ifnull(数据，被当作哪个值)
+    select ename, (sal + ifnull(comm, 0)) * 12 as yearsal from emp;
+
+    case...when..then...when..then..else..end 
+    当员工的工作岗位是MANAGER的时候，工资上调10%，当工作访问是SALESMAN的时候，工资上调50%,其他正常
+    注意：不修改数据库，只是查询显示为上调
+    select 
+        ename, 
+        job, 
+        (case job when 'MANAGER' then sal*1.1 when 'SALESMAN' then sal*1.5 else sal end) as newsal
+    from 
+        emp;
+    
+
+## 分组函数
+    特点：输入多行，最终输出一行
+    5个：
+    count 计数 
+    sum  求和
+    avg  平均值
+    max  最大值
+    min  最小值
+    注意：分组函数在使用的时候必须先进行分组，然后才能使用。
+    如果你没有对数据进行分组，整张表默认是一组。
+
+    找出最高工资？
+    select max(sal) from emp;
+    select min(sal) from emp;
+    计算 工资和？
+    select sum(sal) from emp;
+    平均工资：
+    select avg(sal) from emp;
+    计算员工数量？
+    select count(ename) from emp;
+
+    分组函数使用的时候需要注意？
+    select sum(comm) from emp; comm有null 
+    1. 分组函数会自动忽略NULL，你不需要提前对NULL进行处理
+    2. 分组函数中count(*)和count(具体字段) 区别
+    count(具体字段)：表示统计该字段所有不为NULL的元素的总和 
+    count(*): 统计表当中的总行数，只要有一行数据count则++
+        因为每一行记录不可能都为NULL，一行数据中有一些不为NULL，则这行数据就是有效的
+    
+    40集 
+
+
+
+
+
+
+
+
+
+
+
+
+
+

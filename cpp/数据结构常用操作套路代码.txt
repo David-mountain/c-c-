@@ -1,0 +1,110 @@
+## Array 
+### 扩容(动态数组) Remalloc 
+    1. 实参判断是否小于等于现有的容器尺寸，小于扩个P
+    2. 判断现有的元素个数是否大于0，没有就无需挪动操作了，直接delete[]原数组内存了
+    3. 进入有元素个数的内容，挪动元素的常规代码：
+        auto p = new TYPE[nSize]; 新申请的扩容内存
+        auto q = m_pData;         原有内存
+        把原有内存的元素 给 现有内存
+        while (p - pData < (long long)m_nSize) (这个套路极其重要)(p-pData 指针相减是元素个数)
+            *p++ = *q++; (最妙的是不断递增的指针)
+    4. 释放原有内存 并且迭代原有数据和尺寸
+
+### 插入+新增 InsertAt(nIndex, data)
+    1. 插入和新增 首先是想到是否扩容。现有元素是否>=容器大小
+    2. 当不需要扩容时候，就要想到挪动元素，挪动几次呢？挪动起点呢？
+        auto p = m_pData + (m_nSize - 1); $$$ 挪动起始位置 知识是指针偏移量
+       while (m_nSize >= nIndex) // 可把--放在这形参上 m_nSize--
+       {
+        p[1] = *p--; 偏移量 偏移量 []记死了 把前一个元素给到了后一个位置
+        --m_nSize;
+       }
+    3. 遍历完了，即元素挪完了，iIndex位置空出来了，可以赋值了。最后记得++已有元素尺寸
+
+### 删除 RemoveAt(size_t nIndex)
+    1. 形参判断边界，小于等于0 或者 大于等于已有元素尺寸 军不正确
+    2. 删除意味着要挪动元素，从后往前的，挪动几次？挪动起始点？
+        auto i = m_nSize - nIndex - 1;  对比上面$$$处  这是挪动次数 上面是挪动起始位置
+        auto p = m_pData + nIndex; 挪动起始位置
+        while (i--) // 对比上面的循环条件 while (m_nSize >= nIndex) 两种控制循环的次数！！！
+        {
+            *p = p[1];
+            ++p;
+        }
+    3. 最后记得--已有元素尺寸
+
+### 增加(动态数组)
+    1.想到数组是否需要扩容，
+
+
+## LinkedList
+    STL：
+    ### 删除 erase(iterator it)  这是双向循环链表
+        1. 先要判断迭代器是否是 end() 是 则直接返回end()
+        2. 处理链表一定要注意，是否需要提前保存 所处理节点的后一个节点 (双向链表注意是 两条线 哦)
+            SNode* p = it.p;
+            auto q = p->pNext;
+            p->pPrev->pNext = p->pNext;   前一个节点->pNext = 处理节点的->pNext 
+            p->pNext->pPrev = p->pPrev;   后一个节点->pPrev = 处理节点的->pPrev 
+            要做到一眼看出这个代码做什么：(p-pPrev)->pNext  (p->pNext)->pPrev 
+        3. 删除的节点一定要 释放释放释放 delete p; 最后记得--已有元素
+
+    ### clear() 这是双向循环链表
+        1. 链表 清空，第一反应就是迭代释放每个节点内存
+        2. auto p = m_end->pNext; 这是双向链表 不用管这句代码
+           while (p != m_end) 双向链表的判断看看是啥哈 看仔细了
+           {
+                auto q = p; 通过另外一个变量来，释放节点内存
+                p = p->pNext;
+                delete q;
+           }
+        3. 不要忘记了 指向问题
+            m_end->pNext = m_end;
+            m_end->pPrev = m_end;
+           最后是原有元素尺寸 重置成0
+
+    ### resize() 
+        1. 首先想到链表和数组的是不一样的，如果是截断情况，数组不用释放内存，而链表需要
+           数组是 <=已有元素大小，则直接return 而链表需要分类讨论 == < 两种情况 因为<需要释放内存
+        2. if (n == m_nCount) return;
+            if (n < m_nCount)
+            {
+                auto p = m_end->pPrev; 尾指针
+                while (n < m_nCount) // 结束条件有两种情况： 除了n++ 还有--m_nCount 两种情况的。
+                                    // n之后的都是需要截断的
+                {
+                    auto q = p;
+                    p = p->pNext;
+                    delete q;
+
+                    --m_nCount;
+                }
+            }
+            else 
+            {
+                while (m_nCount++ < n)
+                    push_back(val);
+            }
+
+    ### sort() 
+        1. 首先想到这是链表的排序，冒泡和快速排序都是需要使用到下标的，所以不合适，适合的就是选择排序
+
+    MFC CList:
+    ### RemoveAt(POSTION pos)
+        1. 第一反应 链表的位序删除 一定要想到 首 尾 中间 分类讨论
+        2.  SNode* p = (SNode*)pos;
+            if (p->pPrev) 
+                p->pPrev->pNext = p->pNext; 中间(pNext线)
+            else 
+                m_pHead = p->pNext;  首 
+            if (p->pNext)
+                p->pNext->pPrev = p->pPrev; 中间(pPrev线) 
+            else 
+                m_pTail = p->pPrev; 尾 
+            delete p;
+        3. 最后记得 --已有元素尺寸 
+        
+
+
+
+

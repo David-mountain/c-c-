@@ -1,0 +1,59 @@
+# vector
+## Element access:
+    ### operator[]
+        reference operator[] (size_type n);const_reference operator[] (size_type n) const;
+    ### at 
+        reference at (size_type n);
+        const_reference at (size_type n) const;
+    ### front
+        reference front();
+        const_reference front() const;
+    ### back 
+        reference back();
+        const_reference back() const;
+    ### data 
+         value_type* data() noexcept;
+         const value_type* data() const noexcept;
+
+## modifiers 
+    ### assign 
+                range(1) template <class InputIterator>  
+                            void assign (InputIterator first, InputIterator last);
+                fill(2)  void assign (size_type n, const value_type& val);
+    initializer list(3)  void assign (initializer_list<value_type> il); ???
+
+    ### push_back 
+        void push_back (const value_type& val);
+        void push_back (value_type&& val);
+
+    ### pop_back 
+        void pop_back();
+
+    ### insert 
+        single element(1) iterator insert (const_iterator position, const value_type& val);
+                  fill(2) iterator insert (const_iterator position, size_type n, const value_type& val);
+                 range(3) template <class InputIterator>iterator
+                            insert (const_iterator position, InputIterator first, InputIterator last);
+                  move(4) iterator insert (const_iterator position, value_type&& val);
+      initializer list(5) iterator insert (const_iterator position, initializer_list<value_type> il);
+
+    ### erase 
+        iterator erase (const_iterator position);
+        iterator erase (const_iterator first, const_iterator last);
+
+    ### swap 
+        void swap (vector& x);
+
+    ### clear 
+        void clear() noexcept;
+
+    ### emplace 
+        template <class... Args>iterator
+            emplace (const_iterator position, Args&&... args);
+    
+
+
+
+
+
+

@@ -1,0 +1,77 @@
+## 二叉堆实现
+堆heap，是作为数据结构中的堆来讨论，而并非内存结构中的堆，堆本身可以被看做满足一些特定条件的树。
+性质：1.堆必定是一棵完全树 
+     2.堆中任意节点的值总是不大于或不小于其子节点的值。
+
+## 最小堆实现
+#include <iomanip>
+#include <iostream>
+
+using namespace std;
+
+template <class T>
+class MinHeap 
+{
+    private:
+        T *mHeap;       // 数据
+        int mCapacity;  // 总的容量
+        int mSize;      // 实际容量
+
+    private:
+        // 最小堆的向下调整算法
+        void filterdown(int start, int end);
+        // 最小堆的向上调整算法(从start开始向上直到0，调整堆)
+        void filterup(int start);
+
+    public:
+        MinHeap();
+        MinHeap(int capacity);
+        ~MinHeap();
+
+        // 返回data在二叉堆中的索引
+        int getIndex(T data);
+        // 删除最小堆中的data
+        int remove(T data);
+        // 将data插入到二叉堆中
+        int insert(T data);
+        // 打印二叉堆
+        void print();
+}
+
+/*
+ * 构造函数 
+ */
+ template <class T>
+ MinHeap<T>::MinHeap ()
+ {
+    new (this)MinHeap(30);
+ }
+template <class T>
+MinHeap<T>::MinHeap(int capacity)
+{
+    mSize = 0;
+    mCapacity = capacity;
+    mHeap = new T[mCapacity];
+}
+/*
+ * 析构函数 
+ */
+template <class T>
+MinHeap<T>::~MinHeap ()
+{
+    mSize = 0;
+    mCapacity = 0;
+    delete[] mHeap;
+}
+/*
+ * 返回data在二叉堆中的索引
+ *
+ * 返回值：
+        存在 -- 返回data在数组中的索引
+        不存在 -- -1
+ *
+ */
+
+
+
+

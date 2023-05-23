@@ -374,7 +374,7 @@ LinkListNode* Create_Front1_LkList (ElemType arr[], int length)
   if ( pHead )
   {
     pHead->pNext = NULL;
-    q = pHead->pNext;  
+    q = pHead->pNext;  // ?
   }
   
   // 头插的时候，必须逆序遍历顺序表
@@ -633,7 +633,7 @@ LinkListNode* ReverseLkList (LinkListNode* pHead)
   Pointer = Back->pNext;
   Next = Pointer->pNext;
   
-  Pointer->pNext = Back; // 为什么要单轮一次呢？
+  Pointer->pNext = Back; // 为什么要单轮一次呢？让Back是指向最后一个节点，而不是头节点
   Back = Pointer;
   Pointer = Next;
   
@@ -671,15 +671,20 @@ int main ()
 LinkListNode* ReverseLkList (LinkListNode* pHead)
 {
 	if (pHead == null || pHead.next = null) return pHead; // 最后一个元素就结束了 我说嘛
-  
+  												     // 错误，pHead并不是最后一个元素 
+  													// 是 头节点
   	LinkListNode* newHead = ReverseLkList(pHead.pNext);
   
-  	// 归的过程中 pHead不断变化 这个过程中我们修改了链接
-  	pHead.next.next = pHead; // 回指 改变链接了
+  	// 归  pHead不断变化 这个过程中我们修改了链接
+  	pHead.next.next = pHead; // 回指 改变链接了 最后返回最后1个元素 到这里肯定是pHead是倒2元素了
+  				// 懂了 pHead->pnext是首元节点 .next = pHead; 是回指2的步骤了
+  				// 当pHead是倒3元素，
+  				// 后节点指向当前节点
   	pHead.next = null; // 第一个元素下一个节点指向null
-  
+  				// 当前节点指向NULL
     return newHead;
 }
+https://blog.csdn.net/weixin_44403637/article/details/106534154 经典分析
 ```
 
 #### 题目二-一元多项式运算
@@ -959,7 +964,7 @@ int main ()
 
 
 
-### 循环链表
+### 循环链表(单的)
 
 #### 原始模板
 
