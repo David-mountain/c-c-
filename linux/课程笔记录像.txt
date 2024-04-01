@@ -1,0 +1,34 @@
+大小写linux区分 windows不区分，所以相当于同名文件
+pause cls 的linux实现 
+代码移植：所需要什么头文件 man socket 就可以看到
+学会使用linux帮助
+跑起来 很多接口参数报错？
+man recvfrom 不断这样看具体问题
+接口抱什么错 就man 它
+man close 还需要单独一个头文件
+就是man它！！！
+
+无连接时，发送端短了，然后重启依然可以继续发送
+不需要连接
+
+xfpt ip -a 本机的PORT还是UBUNTU的？
+tfp协议，TCP做的？？
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 

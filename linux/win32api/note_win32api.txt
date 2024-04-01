@@ -1,0 +1,555 @@
+SDK编程，使用C语言调用实现。
+光看不练假把式
+
+面向硬件编程 使用汇编和机器码 太麻烦了
+面向OS编程  简单一点了
+面向封装OS SDK编程 更更简单了点
+
+图形用户界面 -GUI
+XP= WindowsNT5.1 真正版本号
+WIN7=WindowsNT6.1
+WIN8=WindowsNT6.2
+
+VS创建WIN32项目
+
+大写标识符的含义：
+这些标识符都是宏定义，前缀标明该常量所属的一般类别：
+CS 类风格选项ClassStyle
+CW 创建窗口选项CreateWindow
+DT 文本绘制选项DrawText
+IDI 图标的ID号IDIcon
+IDC 光标的ID号IDCursor
+MB 消息框选项MessageBox
+SND 声音选项Sound
+WM 窗口消息WindowMessage
+WS 窗口风格WindowStyles
+DC 设备Device Context
+
+显示： 代码 -> windows ->显示在屏幕中
+
+---------消息机制1------------
+回忆窗口的诞生：
+1.窗口类结构WNDCLASS
+2.注册窗口类RegisterClass
+3.创建窗口实例CreateWindow
+4.显示窗口ShowWindow
+5.更新窗口UpdateWindow
+6.消息循环-有了这个消息机制 windows消息才能上传下达
+
+事件驱动：
+windows是一个事件驱动，基于消息的OS。
+windows强调的是事件触发，并且事件之间是无序的
+比如：按下键盘按键 移动、点击鼠标 打开应用程序
+然后监听到就会加入 系统消息队列。
+WM_MOUSEMOVE
+VM_LBUTTONDOWN
+WM_KEYDOWN
+WM_PAINT
+WM_CREATE
+
+代码片段：
+while (GetMessage(&msg, NULL, 0, 0))
+{
+ TranslateMessage(&msg);
+ DispatchMessage(&msg);  ->这函数内会回调找windows
+}
+windows里面swtich 有我们的代码逻辑。
+-----------消息机制2----------
+消息队列 FIFO 先进先出
+WM_PAINT WM_TIMER WM_QUIT 这三个消息属于特例，
+OS会把它们时刻放在消息队列的最后。
+消息其实细分：队列化消息 非队列化消息
+
+打断点了，消息。
+
+----------窗口过程------------
+一个窗口的划分：客户区 非客户区
+大部分非客户区是OS负责
+太丑，可以创建无边框客户区，然后内部自己创建边框，有难点。
+
+问题：
+DispatchMessage 带着消息找OS，然后OS调用WndProc这个窗口过程，
+那OS怎么知道WndProc这个窗口过程的地址呢？
+我们传了结构体参数。
+
+case WM_PAINT:
+hdc = BeginPaint(hwnd, &ps);
+GetClientRect(hand, &rect);
+DrawText(hdc, TEXT("hello world"),-1,&rect,
+   DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+EndPaint(hwnd, &ps);
+
+case VM_DESTROY:
+  PostQuitMessage(0);
+
+case WM_LBUTTONUP:
+case WM_LBUTTONDOWN:
+
+WM_LBUTTONDOWN 客户区按
+WM_NCLBUTTONDOWN 非客户区被按
+NC: nonclient 非客户区
+
+非客户区最好交给 DefWindowProc()
+Default 
+
+------------windows编程中的若干难点-----------
+模板代码。就是之前那个。写熟练。
+主要精力在switch case部分的逻辑API。
+
+退出 弹出框框 选择是否退出？
+流程图。
+究竟是谁调用了谁？
+在传统C语言中，程序需要实现什么功能，就调用函数完成。
+windows编程就需要转变思路了，不能再认为你在调用OS函数完成需要的功能
+否则，依然停留在C语言的思路中。
+windows编程中，有句话 don't call me, i will call you
+用户对窗口的所有操作，都会触发相应的事件，
+windows把所有的事件转成对应的消息。
+所有的窗口过程调用都是 以消息的形式触发的。
+我们写的大部分代码都是致力于各种消息的处理。
+
+消息机制-核心机制。
+比如：调用我们自己写的函数，需要给windows发送消息，
+然后它通过消息来间接调用我们写的函数。
+
+队列消息和非队列消息：
+
+抢占式多任务环境：
+不能在某条消息上耗费时间，否则用户体验很差。
+
+----------文本输出------------
+windows三大核心部件：kernel GDI user 
+大部分API函数都是封装在这三个的子系统中的。
+
+GDI：
+设备环境：设备环境句柄是应用程序使用GDI函数的通行证。
+设备环境：也叫做设备上下文或设备描述表 Device Context
+其实就是GDI内部维护的一个数据结构
+句柄：windows内部的指针。不是c的指针，是windows内部维护的索引值。
+  通过这个索引就可以找到句柄相关的对象。
+
+获取设备环境句柄：
+方法一：响应WM_PAINT消息时使用
+hdc = BeginPaint(hwnd, &ps)
+  // 使用GDI函数
+EndPaint(hwnd, &ps);
+方法二：
+hdc = GetDC(hwnd);
+ // 使用GDI函数
+ReleaseDC(hwnd, hdc);
+
+TextOut()
+
+-----10. 
+把c string api发展成了windows版本的string api
+字符串处理函数:
+wsprintf lstrlen lstrcpy lstrcat 
+安全的字符串处理函数：(都要求给长度)
+StringCchPrintf StringCchLength StringCchCopy StringCchCat 
+
+在windows中，所有的字符串都要用Text包裹
+TCHAR szBuffer[128] = TEXT("dssfad");
+
+------11 文本尺寸
+尺寸单位是映射模式 windows中
+服了，干回老本行了。都是类似前端包含的知识。
+GetTextMetrics 函数将当前字体的信息填充到指定缓冲区(TEXTMETRIC 结构)
+demo 打印10行文字 然后行距
+
+------12 获取窗口的各种尺寸
+GetSystemMetrics 函数返回Windows中各种图形项(图标 鼠标指针 标题栏和滚动条等)的尺寸信息。
+在不同的显卡和驱动中，这些尺寸是不一样的，为了在程序中做到与设备无关的图形输出。
+这个函数是一个很重要的函数。
+注意：这个函数获取的所有尺寸均以像素为单位。
+
+设备独立性：是指OS把所有外部设备统一当作文件来看待，
+只有安装它们的驱动程序，任何用户都可以像使用文件一样，
+操纵，使用这些设备，而不必知道它们的具体存在形式。
+
+大坑这个函数。随着不管更新，95个了当时，现在更多。
+小demo。
+
+? & 1 = 作用 忘记了 
+又一个API显示列表参数的DEMO。
+
+------13.滚动条
+最大程度提高了用户体验。
+如何获得客户区的尺寸？
+获得客户区在屏幕模式下的分辨率：
+GetSystemMetrics(SM_CXFULLSCREEN) 宽度
+GetSystemMetrics(SM_CYFULLSCREEN) 高度
+或者使用：
+GetClientRect函数来获取当前客户区的大小
+
+如果每次窗口改变，都触发，不好，有回调的这：
+LRESULT CALLBACK WndProc (..., LPARAM IParam)
+当主窗口的客户区部分大小改变时，OS将给应用程序发送WM_SIZE消息
+把客户区新的宽度和高度分别存放在IParam参数的低16位和高16位
+如何分离这高16位 和 低16位，提供了两个宏
+LOWORD(IParam) 和 HIWORD(IParam) 按位与计算出的 自己可以推哈
+小案例。
+
+滚动条：
+如何添加滚动条？
+WS_VSCROLL垂直  WS_HSCROLL水平
+如何滚？上下左右 鼠标拖着
+通过消息触发来滚动的
+WM_VSCROLL垂直 和 WM_HSCROLL水平
+案例。
+
+这节课让滚动条滚动起来。
+滚动条，Windows负责：
+  处理滚动条中的所有鼠标消息
+  当用户单击滚动条时，提供一种反向显示的闪烁
+  当用户拖动滑块时，在滚动条内移动滑块
+  向拥有滚动条的窗口的窗口过程发送滚动条消息
+
+我们的代码需要负责：
+  初始化滚动条的范围和位置
+  处理传送给窗口过程的滚动条消息
+  更新滑块的位置
+  根据滚动条的变化更新客户区的内容
+
+滚动条相关的函数：
+设置滚动条的范围：SetScrollRange
+设置 滚动滑块的位置：SetScrollPos
+获取滚动条的范围：GetScrollRange
+获取滚动滑块的位置：GetScrollPos
+
+4min
+
+----16. 跳到窗口绘画------
+GDI理论原理 自己扩展
+一个点的绘制：
+API：
+  SetPixel 绘制一个像素点为指点颜色
+  GetPixel 获得一个像素点的颜色
+  SetPixelV 比SetPixel函数块
+
+windows按RGB三原色绘制
+COLORREF：
+31-24 23-16 15-8 7-0
+0 蓝色 绿色 红色
+2的倍数是最快的 CPU每次4/8个字节处理 内存对齐原因
+
+-------17. 画直线------
+直线绘制 API:
+MoveToEx 指定直线的起点
+LineTo 指定直线的终点 
+GetCurrentPosition(获得当前位置的坐标)
+
+Demo: 客户区绘制一个网格，要求线与线之间距50个像素的距离。
+
+Demo: 给5个点，画五角星：
+(30,10)(20,50)(50,20)(10,20)(40,50)
+
+---------18.折线-------
+API档案：
+  Polyline 画完原点依然在左上角 画完重置
+  PolylineTo 画完不重置
+  PolyPolyline 
+
+用这个API画出五角星
+画三角形 倒三角形 正方形
+
+绘制sin函数 导入库<math.h> 
+要倒过来 
+
+-----贝塞尔曲线
+有弧度的 基本都是贝塞尔样条曲线设计出来的
+计算公式：省略了
+API:
+ PolyBezier 重置
+ PolyBezierTo 不重置
+
+两个案例都是蒙蔽的
+
+--------边框绘制函数--------
+API:
+  Rectangle 矩形
+  Ellipse 椭圆 圆
+  RoundRect 圆角矩形 
+  Arc 弧
+  Chord 扇形(直线与圆的两交点 然后这个扇形) 
+  Pie 扇形(圆心的)
+
+可以组合 会覆盖
+小练习。蒙蔽。覆盖操作 层次
+
+
+--------跳 26.GUI映射模式-------
+计算机和数学的坐标不一样 理解成修改坐标轴的方向
+提供了8种模式
+逻辑单位 设备单位 二者之间的转换是由映射模式决定的
+
+--------27.视口和窗口-------
+windows对多有的消息，所有的非GDI函数，以及一些GDI函数，都继续使用设备坐标，就是像素为单位的。
+
+逻辑坐标系统 - 窗口
+设备坐标系统 - 视口
+映射模式决定逻辑坐标的单位
+设备坐标的单位是像素
+
+在窗口(逻辑坐标)下编程
+在视口(设备坐标)下显示
+
+视口和窗口的转换公式 省略
+Demo api
+
+--------28.坐标转换---------
+LPtoDP
+DPtoLP
+
+--------29. 自定义的映射模式---------
+
+--------31. 处理矩形---------
+FillRect 填充
+FrameRect  边框
+InvertRect rgb颜色取反
+
+操纵矩形：
+SetRect
+OffsetRect
+InflateRect
+SetRectEmpty
+CopyRect 
+IntersectRect
+UnionRect
+IsRectEmpty
+PtInRect
+注：对矩形的操作要在绘制之前
+
+--------32. 随机矩形---------
+PeekMessage 
+之前核心说过：GetMessage 会一直监听
+我们希望可以空闲时做一些其他事情
+
+--------33. 区域和剪裁---------
+区域 GDI对象
+创建区域API:
+createRectRgn 创建矩形区域
+createRectRgnIndirect 创建矩形区域-参数不同
+createEllipticRgn 创建椭圆形区域
+createEllipticRgnIndirect
+createPolygonRgn
+createPolyPolygonRgn
+createRoundRectRgn
+fillRgn
+fillFrame
+
+创建区域，画了4个椭圆，但是使用Ellipse函数也能实现，区域有什么不同？区域之间可以合并，产生一个新的组合区域。
+
+CombineRgn() 合并重叠区域
+
+剪裁区域：
+就是GDI绘图的范围，超出范围不会绘制的
+使用是SelectClipRgn 函数指定一个区域作为当前设备环境的剪裁区域。
+SelectClipRgn 
+
+案例
+
+--------34. 键盘事件---------
+击键消息：
+WM_KEYDOWN
+WM_KEYUP
+WM_SYSKEYDOWN
+WM_SYSKEYUP
+字符消息：
+WM_CHAR
+WM_DEADCHAR
+WM_SYSCHAR
+WM_SYSDEADCHAR
+
+SendMessage()
+
+效果是上下滚动
+
+--------35. 字符消息---------
+
+--------41. 使用子窗口---------
+CreateWindow 创建一个重叠式窗口
+GetWindowLongPtr 
+MoveWindow
+
+--------45. 计时器---------
+SetTimer
+KillTimer
+
+三种方法使用定时器：
+1.定时发送WM_TIMER消息
+2.定时调用计时器回调函数
+
+--------46. 数字时钟---------
+7段数码管 显示 数字绘制
+
+--------47. 模拟时钟---------
+demo挂钟
+三角函数 使用的还是弧度 公式 代码中
+有点小复杂这个
+
+--------48. 颜色拾取器---------
+rgb 唯一色
+GetCursorPos 
+GetPixel 
+CreateDC
+SetTimer 
+
+提高用户体验：
+不允许调整窗口的大小，只能最小化窗口
+指定窗口的大小为固定尺寸
+
+多练习案例。
+
+--------49. 各种各样的按钮---------
+一个产品什么地方最值钱？不是代码，不是图形，而是产品的使用逻辑，使用是否顺手。
+如果让你为某个行业开发一个软件产品，怎么做？
+先快速的入门这个行业，几周就能和这个行业的人能说得上话，行话交流。提需求你才能懂。
+研究这个行业一些成熟的程序。
+不然就是一辈子的代码，对各行各业都要有所了解。
+保持好奇心，什么都可以试一试，说不清哪天就跨界了。
+
+
+windows提供的子窗口控件有：
+按钮类 button
+复选框 check box 
+编辑框 edit box
+列表框 list box
+组合框 combo box
+文本字符串 test string
+滚动条 scroll bar
+
+--------50. 翻牌子---------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

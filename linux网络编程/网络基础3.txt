@@ -1,0 +1,485 @@
+------1、线程版服务器-------------
+#include <pthread.h>
+typedef struct c_info 
+{
+    int cfd;
+    struct sockaddr_in cliaddr;
+}CINFO;
+
+int main (int argc, char *argv[])
+{
+    if (argc < 2)
+    {
+        printf("argc < 2????  \n ./a.out 8000 \n");
+        return 0;
+    }
+    short port = atoi(argv[1]);
+    int lfd = tcp4bind(port, NULL); 创建套接字 绑定 
+    Listen(lfd, 128);
+    struct sockaddr_in cliaddr;
+    socklen_t len = sizeof(cliaddr);
+    CINFO info;
+    while (1)
+    {
+        Accept(lfd, (struct sockaddr *)&cliaddr, &len);
+        char ip[16] = "";
+        printf("new client ip=%s port=%d \n", inet_ntop(AF_INET, &cliaddr.sin_addr.s_addr, ip, 16), 
+            ntohs(cliaddr.sin_port));
+        // 主线程监听 子线程干活 
+        pthread_t pthid;
+        info = malloc(sizeof(CINFO));
+        info->cfd = cfd;
+        info->cliaddr = cliaddr;
+        pthread_create(&pthid, NULL, client_fun, info); &info会覆盖的，每次来就重新开辟空间可解决，方法多，
+    }
+}
+
+void* client_fun (void *arg)
+{
+    CINFO *info = (CINFO *)arg;
+    char ip[16] = "";
+    
+     printf("new client ip=%s port=%d \n", inet_ntop(AF_INET, &(info->cliaddr.sin_addr.s_addr), ip, 16), 
+            ntohs(info->cliaddr.sin_port));
+     while (1)
+     {
+        char buf[1024] = "";
+        int count = 0;
+        count = read(info->cfd, buf, sizeof(buf));
+        if (count < 0)
+        {
+            perror("");
+            break;
+        }
+        else if (count == 0)
+        {
+            printf("client close");
+            break;
+        }
+        else 
+        {
+            printf("%s \n", buf);
+            write(info->cfd, buf, count);
+        }
+     }
+     close(info->cfd);
+     free(info);
+}
+底层库 还是c语言写的。
+
+回收 到线程分离属性？？
+
+--------tcp状态转换图------------------
+特殊情况：两者都想连接对方，都发SYN了。
+都想同时关闭，都等对方的ACK。
+四次挥手中两个包作一个发送过来了。
+
+--------半关闭------------------
+close()调用了只是关闭了应用层，底层还没有关闭。 叫半关闭状态。关闭的是写端，可以收。
+表明我没有数据传输了，你还有数据给我我依然可以收。
+是否可以人为控制，比如我就想发，但是不能收了。用到一个函数 shutdown 
+int shutdown(int sockfd, int how);
+相当于把这个文件关闭了，其他线程也无法使用了。
+
+--------心跳包------------------
+如果对方异常断开，本机检测不到，一直等待，浪费资源。
+客户端宕机了，服务端不知道，一直等着也不行阿。
+其实就是异常处理。
+多长时间发一个表示你还连接着的，就是用心跳包。
+setsockopt(); 
+如果不回，就会断开和你的连接，把你踢掉。
+
+自己写一个心跳包，心跳包根据业务不一样，没要求可以用默认这个。
+对方异常断开，本机检测不到，一直等待，浪费资源。
+需要设置TCP的保持连接，作用就是每隔一定的时间间隔发送探测分节，如果连续发送多个还未回。
+就将此连接断开。
+自己写的心跳包，保持最小粒度，数据尽可能小，本身就是为了检测是否连接，不是为了携带数据。
+乒乓包：携带比较多的数据的心跳包。
+
+SO_RCVBUF和SO_SNDBUF每个套接字都有一个发送缓冲区和一个接收缓冲区，使用这两个套接字选项可以改变缺省缓冲区大小。
+
+自己组包，飞秋。可惜没有资料。用的原始套接字。
+
+--------端口复用------------------
+就想用一个被占用的端口。
+端口复用：端口重新启用。
+谁最后使用的谁就是 使用这个端口的，之前的端口程序是无法使用了。
+int opt = 1;
+setsockopt(lfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+bind绑定之前设置。
+
+--------多路IO转接技术------------------
+查看进程中 栈的空间 不够了会去开辟的
+高并发服务器：共三种
+ 1.阻塞等待 消耗资源，一直等待
+ 2.非阻塞忙轮询 非常消耗CPU 
+ 3.多路IO  有个牛逼的秘书，帮忙监听这些个套接字文件描述符 如果有新的需求来了就通知老板来服务
+    这个秘书一定要强大，自己无法写出 内核有个监听事件 内核监听的方法有三种：poll epoll select 
+    我们把这种技术叫做多路IO转接(多路IO复用)
+    即，数据发来了，内核就会检测到，你的读缓冲区有变化。监听到就会去处理，内核通知我，基于内核的一个事件。
+
+    多路IO转接(多路IO复用)：内核监听多个文件描述符的属性(读写缓冲区)变化。
+    如果某个文件描述符的读缓冲区变化了，这个时候就是可以读了，将这个事件告知应用层。
+    怎么处理就是你的事情了，其实就是两类：lfd-直接提取 cfd-直接发回去 
+    
+    多路IO转接服务器也叫多任务IO服务器。这类服务器实现的主旨思想是：不再由应用程序自己监视客户端连接，
+    取而代之的是内核替应用程序监视文件。
+
+select epoll poll 
+windows 使用select 跨平台的 
+poll 使用较少 和select差不多 
+epoll 使用较多，linux 安卓 苹果也可以用 
+
+---------select api-----------------
+文件描述符存在哪里？这个表在哪里？ 进程控制块PCB 
+那张表什么样子？位图 一位一位的 
+
+int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)
+nfds：最大文件描述符+1 
+readfds：需要监听的读的文件描述符存放的集合
+writefds：需要监听的写的文件描述符存放的集合 满了监听 其他使用较少 NULL 
+exceptfds：需要监听的异常的文件描述符存放的集合 NULL 
+timeout：多长时间监听一次，固定的时间，限时等待  永久监听-NULL 
+struct timeval 
+{
+    long tv_sec; 秒
+    long tv_usec; 微妙 
+}
+返回值：返回的是变化的文件描述符的个数。
+注意：变化的文件描述符 会存在监听的集合中，未变化的文件描述符会被删除。
+   注意，下次监听，又要重新添加进去哈。
+
+功能：监听多个文件描述符的属性变化(读 写 异常) 其实它还可以监听硬件文件描述符等。
+void FD_CLR(int fd, fd_set *set) 踢除
+void FD_ISSET(int fd, fd_set *set); 判断
+void FD_SET(int fd, fd_set *set); 加入
+void FD_ZERO(fd_set *set); 清空集合
+
+------select实现原理-----------------
+只要是文件描述符，都能监听。
+应用层-父进程 -> 内核 select -> lfd cfdl cfd2 cfd3 
+
+应用层： 位图集合 0 1 2 3 4 5 6 7 8 9 .. 
+然后需要监听的文件描述符，就对应的变成 1.
+这时候最好备份哈 oldset。
+拷贝到内核，这时候6 7 变化了，踢除5，然后把集合返回应用层，
+这时候遍历集合，在集合里面就去处理即可。
+
+只有lfd 是需要提取，然后加到oldset集合中。
+
+------select代码实现-----------------
+我本可以忍受黑暗，如果我没有见过阳光的话。
+int main ()
+{
+    创建套接字，绑定 
+    int lfd = tcp4bind(PORT, NULL);
+    监听 
+    Listen(lfd, 128);
+    int maxfd = lfd; 最大的文件描述符
+    fd_set oldset, rset;
+    FD_ZERO(&oldset);
+    FD_ZERO(&reset);
+    将lfd添加到oldset集合中 
+    FD_SET(lfd, &oldset);
+    while (1)
+    {
+        rset = oldset; 将oldset赋值给需要监听的集合rset 
+        int n = select(maxfd + 1, &rset, NULL, NULL);
+        if (n < 0)
+        {
+            perror("");
+            break;
+        }
+        else if (n == 0)
+        {
+            continue; 如果没有变化，重新监听
+        }
+        else 监听到了文件描述符的变化  
+        {
+            // lfd变化 代表新的连接到来
+            if (FD_ISSET(lfd, &rset)) 
+            {
+                struct sockaddr_in cliaddr;
+                socklen_n len = sizeof(cliaddr);
+                char ip[16] = "";
+                提取新的连接
+                int cfd = Accept(lfd, (struct sockaddr *)&cliaddr, &len);
+                printf("new client ip=%s port=%d \n", inet_ntop(AF_INET, &cliaddr.sin_addr.s_addr, ip, 16),
+                    ntohs(cliaddr.sin_port));
+                将cfd添加到oldset集合中，以下次监听
+                FD_SET(cfd, &oldset);
+                更新maxfd 
+                if (cfd > maxfd)
+                    maxfd = cfd;
+                如果只有lfd变化，continue 
+                if(--n == 0)
+                    continue;
+            }
+
+            // cfd变化 遍历lfd之后的文件描述符是否在rset集合中，如果在则cfd变化 
+            for (int i = lfd+1; i <= maxfd; ++i)
+            {
+                如果i文件描述符在rset集合中
+                if (FD_ISSET(i, &rset))
+                {
+                    char buf[1500] = ""; 1500 网络中常看到这个数
+                    int ret = Read(1, buf, sizeof(buf));
+                    if (ret < 0) 出错，将cfd关闭，从oldset中删除cfd 
+                    {
+                        perror("");
+                        close();
+                        FD_CLR(i, &oldset);
+                        continue();
+                    }
+                    else if (ret == 0)
+                    {
+                        printf("client close \n");
+                        FD_CLR(i, &oldset);
+                        continue();
+                    }
+                    else 
+                    {
+                        printf("%s \n", buf);
+                        Write(i, buf, ret);
+                    }
+                }
+            }
+        }
+    }
+    select监听 
+
+    return 0;
+}
+
+--------select总结----------
+监听的文件描述符个数受限于FD_SESTSIZE(宏有关，这个宏限制死了，改宏麻烦)，一般是1024，
+返回变化的文件描述符的个数，具体哪个变化需要遍历，
+每次都需要将监听的文件描述集合由应用层拷贝到内核
+
+假设4-1023个文件描述符需要监听，但是5-1000这些文件描述符关闭了。
+这个时候每次都遍历，效率就很低了。
+自定义一个数组，只保留要监听的文件描述符。已经关了的就不要放进去了。
+
+select缺点，大量并发，少量活跃，select效率低。
+假设4-1023个文件描述符需要监听，但是只有5 1022发来消息。
+这个时候还是要遍历，解决？
+无解。哈哈。
+
+FD_SESTSIZE 内核的一个宏。1024 
+
+--------数组版select 跳----------
+
+---------复习-----------
+半关闭指的是应用层，底层还是可以收发的。
+心跳包-检测对方是否异常断开
+
+高并发服务器： 
+阻塞等待 消耗资源 
+非阻塞忙轮询 消耗CPU 90%
+多路IO     内核 poll,epoll,select 只要文件读缓冲区有数据，就会触发内核监听 写缓冲区一般不监听(主动写) 被动读的
+多路IO转接(多路IO复用) 
+
+select实现原理。
+拷贝会覆盖，需要备份一哈。
+优缺点。跨平台。
+缺点：。。。 
+
+---------poll------------------
+优点：相对于select没有最大1024文件描述符限制
+请求和返回是分离的。不会覆盖原来的集合。
+
+一个进程可以打开的socket描述符上限。
+
+poll，是给一个数组，不是集合。
+每个成员是一个结构体，有要监听的文件描述符，读事件，
+    fd 
+    event = 读 
+    revent = 读 
+
+#include <poll.h>
+int poll(struct pollfd *fds, nfds_t nfds, int timeout);
+监听多个文件描述符的属性变化 
+fds： 监听的数组的首元素地址
+nfds： 监控数组中有多少个文件描述符需要被监听 数组有效元素的最大下标+1
+timeout 毫秒级等待 超时时间 -1是永久监听 >=0限时等待 
+
+struct pollfd 
+{
+    int fd; 需要监听的文件描述符
+    short events; 需要监听的文件描述符什么事件 POLLIN读事件 POLLOUT写事件 
+    short revents; 返回监听到的事件  EPOLLIN读事件 EPOLLOUT写事件   这就是触发事件
+}
+
+poll代码。
+struct pollfd 
+{
+    int fd -> listenfd
+    events -> POLLIN 
+}
+
+if (client[0].revents & POLLIN) listenfd有读事件就绪
+{}
+& ? 位操作，安全？用==去判断不行，视频中什么异常事件 读事件 写事件都发生了，
+POLLIN对应的，无法使用==去判断。好吧，没明白。位与操作，一真全真。
+
+poll优缺点：相对于select
+    没有文件描述符的限制
+    请求和返回是分离的 
+    缺点和select一样：
+        每次都需要将需要监听的文件描述符从应用层拷贝到内核
+        每次都需要将数组中元素遍历一遍 才知道哪一个变化了
+        大量并发，少量活跃，效率低 
+    也没有太大改进，说实话。windows可以修改select宏。
+
+------------epoll--------------------
+红黑树 打野的
+1. 内核中 创建红黑树一棵
+2. 将需要监听的文件描述符上树 
+3. 监听 
+
+进程 -> epoll(放在树上) -> lfd cfd1 cfd2 cfd3 
+优点：
+    没有文件描述符1024的限制 
+    以后每次监听都不用 将需要的文件描述符 拷贝到内核 
+    (如果能返回已经变化的文件描述符就好了，不用我们去遍历寻找了？)
+    (内核中有一个链表，变化了就放在链表中，拷贝给应用层，应用层定义一个数组接收就可以了)
+    返回的是已经变化的文件描述符，不需要遍历树 
+
+3个API：创建 上树 监听 
+创建红黑树：epoll_create 
+int epoll_create(int size); size 监听的文件描述符的上限 2.6版本之后写1即可 
+返回值，返回树的句柄，句柄理解成操作树的把手。树上有文件描述符，所以可以操作文件描述符。
+上树，下树，修改节点。
+int epoll_ctl(
+    int epfd,  树的句柄
+    int op,    上树，下树，修改节点? EPOLL_CTL_ADD EPOLL_CTL_MOD EPOLL_CTL_DEL 
+    int fd,    上树 下树的文件描述符  已经上树了为什么多这个参数？先看有没有在树上 它指针找麻烦点
+    struct epoll_event *event 上树的节点  
+    );
+
+typedef union epoll_data 共用体 卧槽
+{
+    void *ptr;
+    int fd;
+    unit32_t u32;
+    uint64_t u64;
+} epoll_data_t; *
+
+struct epoll_event 
+{
+    uint32_t events; epoll events 
+    epoll_data_t data; *
+}
+
+上树 
+int epfd = epoll_create(1);
+epoll_event ev;
+ev.data.fd = cfd;
+ev.ev.events = EPOLLIN;
+int epoll_ctl(
+    int epfd,  树的句柄
+    EPOLL_CTL_ADD,    上树，下树，修改节点? EPOLL_CTL_ADD EPOLL_CTL_MOD EPOLL_CTL_DEL 
+    cfd,    上树 下树的文件描述符 
+    &ev 上树的节点
+    );
+
+监听： 
+int epoll_wait (
+    int epfd,    树的句柄 
+    struct epoll_event *events, 接收变化的节点的数组的首地址 
+    int maxevents,   数组元素的个数 
+    int timeout -1永久监听 大于等于0 限时等待
+    );
+
+
+-------epoll代码实现------------
+案例：练手 
+父进程        管道pipe   子进程-每5S向管道写数据
+用epoll去监听pipe
+如果监听到fd[0]有变化就去读
+
+int main ()
+{
+    int fd[2];
+    pipe(fd);
+    // 创建子进程 
+    pid_t pid;
+    pid = fork();
+    if (pid < 0)
+        error();
+    else if (pid == 0)
+    {
+        close(fd[0]);
+        char buf[5];
+        char ch='a';
+        while (1)
+        {
+            sleep(3);
+            memset(buf, ch++, sizeof(buf));
+            write(fd[1], buf, 5);
+        }
+    }
+    else 
+    {
+        close(fd[1]); 关闭写端 
+        创建树 
+        int epfd = epoll_create(1);
+        struct epoll_event ev;
+        ev.data.fd = fd[0];
+        ev.events = EPOLLIN;
+        epoll_ctl(epfd, EPOLL_CTL_ADD, fd[0], &ev); 上树 
+        监听 一般都是循环监听 
+        while (1)
+        {
+            int n = epoll_wait(epfd, evs, 1, -1); 返回值是变化的文件描述符 
+            if (n == 1)
+            {
+                char buf[128]; = "";
+                int ret = read(fd[0], buf, sizeof(buf));
+                if (ret <= 0) 写端关闭了 返回值是0 
+                {
+                    close(fd[0]);
+                    epoll_ctl(epfd, EPOLL_CTL_DEL, fd[0], &ev);
+                    break;
+                }
+                else 
+                {
+                    printf("%s \n", buf);
+                }
+            }
+        }
+    }
+}
+11min 跳。
+
+
+--------epoll两种工作方式--------------
+水平触发-LT 边缘触发-ET 
+水平触发--只要缓冲区有，就触发，其实触发多了也不太好，工作中一般不用这个。
+边缘触发--数据来一次，我只触发一次，但是没有读干净咋办？读干净，读到最后会阻塞，
+你能让你程序阻塞吗？阻塞了就无法回去监听了。
+
+水平边缘怎么来的？
+电平，一高一低。电路。
+水平触发： 持续的高电平 或者 持续的低电平  
+边沿触发： 电平又高到低的一个变化，或者，由低到高的变化
+epoll_wait 的水平触发和边沿触发，监听的文件描述符，比如监听的一个cfd,有读缓冲区，写缓冲区，
+一般监听读缓冲区的变化，
+水平触发：只要读缓冲区有数据就会触发，不管一个还是多个字节。
+边沿触发：数据来一次，epoll_wait只触发一次，在触发这一次的时候，把数据给我读感觉，
+如果不读干净，第一次和第二次的数据都区分不干净。
+
+2. 监听写缓冲区的变化
+水平触发：只要可以写，就会触发。只要没有满，就可以写，就会触发。没有满的时候，epoll_wait就一直在触发。
+    所以，如果用水平触发去监听写缓冲区，是不太可行的。
+边沿触发：数据从有到无，就会触发。
+
+代码跳。先过一遍概念即可。
+
+
+
+
+
+
+

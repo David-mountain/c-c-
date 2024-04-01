@@ -36,6 +36,634 @@ linxu目录结构：
 
 
 
+-------命令--------------
+帮助命令: man 
+比如有问题 ls 不会
+man ls 
+.开头的文件 是隐藏文件 在linux中
+空格 下一页       q 退出帮助文档
+ls -al 组合使用 当前目录的
+ls -al/root 把root目录下的所有文件都显示出来
+-al l是单列的形式 
 
+help指令：
+比如cd不懂  help cd 
+获得shell内置命令的帮助信息
+
+------文件目录类 命令----------
+pwd指令
+显示当前工作目录的(绝对路径)
+
+ls指令
+ls [选项] [目录或是文件]
+常用选项：
+-a 显示当前目录所有的文件和目录，包括隐藏的 
+-l 以列表的方式显示信息
+
+vim a.txt 
+ls 
+pwd 
+
+cd指令
+切换到指定目录
+理解：绝对路径和相对路径
+cd ~ 或者cd 回到自己的家目录
+cd .. 回到当前目录的上一级目录
+
+家目录 我就是/home/Ghost目录
+cd /root 绝对路径进root 
+合理的场景使用绝对还是相对
+
+mkdir指令：
+用于创建目录
+mkdir [选项] 要创建的目录
+常用选项：
+-p 创建多级目录
+
+mkdir /home/dog 创建一个目录
+mkdir -p /home/dog/black 创建多级目录
+
+rmdir指令：
+删除空目录
+使用细节：
+rmdir 删除的是空目录，如果目录下有内容时无法删除的
+提示：如果需要删除非空目录，需要使用rm -rf 要删除的目录 -递归强制删除 一定要非常小心
+rm -rf /home/aniaml/ 
+删除一定要小心！！！
+
+touch指令：
+创建空文件
+touch 文件名称
+创建一个空文件 hello.txt 
+
+touch hello.txe
+ls 
+
+cp指令：
+拷贝文件到指定目录
+cp [选项] source dest 
+常用选项：
+-r 递归复制整个文件夹
+
+/home/hello.txt 拷贝到 /home/bbb目录下
+递归复制整个文件夹
+使用细节：强制覆盖不提示的方法： \cp 
+覆盖吗？？原有的
+
+mkdir bbb
+ls 
+cp hello.txt bbb/
+cd bbb/
+ls 有hello.txt了
+
+cp -r ./home/bbb/ /opt/
+整个bbb文件夹 拷贝到 opt里面
+
+\cp -r /home/bbb/ /opt/
+
+rm指令：
+移除文件或目录
+rm [选项] 要删除的文件或目录
+常用选项：
+-r 递归删除整个文件夹
+-f 强制删除不提示
+
+rm /home/hello.txt 
+rm -r /home/bbb
+rm -rf /home/bbb 如果无f 每删除一个问你一遍
+
+mv指令：
+移动文件与目录或重命名
+mv odlNameFile newNameFile 重命名 一个目录下
+mv /temp/movefile /targetFolder 移动文件
+
+touch cat.txt
+ls 
+mov cat.txt pig.txt 重命名
+ls 
+
+mv pig.txt /root/ 移动
+
+移动整个目录 
+mov bbb/ /home/
+
+cat指令：
+查看文件内容 
+cat [选项] 要查看的文件
+-n 显示行号
+
+使用细节：
+cat只能浏览文件，而不能修改文件，为了浏览方便，
+一般会带上 管道命令 | more 
+
+cat -n /etc/profile 
+more指令：
+是一个基于VI编辑器的文本过滤器，它以全屏幕的方式按页显示文本文件的内容，more指令内置了若干快捷键(用于交互的指令)。
+也可独立使用。
+基本语法：
+more 要查看的文件
+空格键 代表向下翻一页
+enter  代表向下翻一行
+q  代表立刻离开more 不再显示该文件内容
+ctrl + f  向下滚动一屏
+ctrl + b  返回上一屏
+=  输出当前的行号
+:f  输出文件名和当前行的行号
+
+cat -n /etx/profle | more 
+
+less指令：
+用来分屏查看文件内容，功能与more指令类似，但是更强大。在显示文件内容时，并不是一次将整个文件加载，按需加载，显示大型文件时效率高。
+
+less 要查看的文件
+空白键 向下翻动一页 
+down   向下翻动一页
+up    向上翻动一页
+/字串 向下搜索字串的功能 n:向下查找 N；向上查找
+?字串 向上搜索字串的功能 n:向下查找 N；向上查找
+q 退出less 程序
+
+less 杂文.txt
+
+echo指令：
+输出内容到控制台
+echo [选项] [输出内容]
+输出环境变量 echo $PATH    echo $HOSTNAME
+echo "hello world"
+
+head指令：
+用于显示文件的开头部分内容，默认情况下显示文件的前10行内容
+head 文件  查看文件头10行内容
+head -n 5 文件  查看文件5行内容，5可以是任意行数
+
+tail指令：
+用于输出文件中尾部的内容，默认显示文件的后面 10行内容
+基本语法：
+tail 文件 查看文件尾10行内容 
+tail -n 5 文件 查看文件尾5行内容，5可以是任意行数
+tail -f 文件 实时追踪该文档的所有更新
+
+查看/etc/profile 最后5行的代码
+tail -n 5 /etc/profile 
+
+实时监控 mydate.txt 看到文件有变化时，是否看到，实时的追加 hello,world 
+touch mydate.txt
+tail -f mydate.txt 然后当前终端停在当前 监听
+改文件时候补充指令：
+>指令和>>指令：
+>输出重定向和>>追加
+基本语法：
+ls -l > 文件  列表的内容写入文件a.txt-覆盖写
+ls -al >>文件 列表的内容追加到aa.txt末尾
+cat 文件1 > 文件2 将文件1的内容覆盖到文件2 
+echo "内容" >> 文件 
+
+1.将/home目录的下文件列表 写入到/home/info.txt中
+2.将当前日历信息 追加到 /home/mycal文件中
+32 12min 
+
+
+
+----跳l08 ubuntu 
+python多用ubuntu 
+安装成功后，都是普通用户权限，并没有root最高权限
+如果需要使用root权限的时候，通常都会在命令前面加上suto,麻烦
+
+fdist -l 查看磁盘使用情况 没有权限
+sudo fdist -l 输入密码即可 
+总不能每次都输入密码
+给root用户设置一个初始密码即可。
+
+给root用户设置密码并使用：
+1.输入sudo passwd 命令，并设定root用户密码
+2.设定root密码成功后，输入 su root 命令，并输入刚才设定的root密码，就可以切换成root了。提示符$代表一般用户，#代表root用户。 注意符号变化。
+3.以后就可以使用root用户了
+4.输入exit命令，退出root并返回一般用户
+
+ubuntu安装后，默认就已经安装好python的开发环境
+python3 输入 看到版本
+quit() 退出 
+vi hello.py 
+print("hello,python");
+:wq
+python3 hello.py
+
+-------
+APT软件管理和远程登录
+apt是一款安装包管理工具，在ubuntu下，我们可以使用apt命令进行软件包的安装、删除、清理等。
+
+原理示意图：使用的流程 像yum
+Ubuntu系统：
+/etc/apt/sources.list 
+1. 记录了很多服务器地址-在美国APT
+2. 修改成 指向 清华的镜像 
+APT通过指令可以完成软件的安装，更新，卸载
+
+2.网关： ↓
+通过网关走到互联网
+
+
+3.国内网络 ↓互联网
+  APT的镜像网站，定时去APT服务器更新
+  知名的清华大学的
+
+4.APT服务器：
+  1. 有很多的APT软件
+
+------------------
+ubuntu软件操作的相关指令：
+！sudo apt-get update 更新源
+！sudo apt-get install package 安装包 
+！sudo apt-get remove package  删除包
+
+sudo apt-cache search package 搜索软件包
+！sudo apt-cache show package 获取包的相关信息 如说明 大小 版本等
+sudo apt-get install package --reinstall 重新安装包
+
+sudo apt-get -f install 修复安装
+sudo apt-get remove package --purge 删除包 包括配置文件等
+sudo apt-get build-dep package 安装相关的编译环境
+
+sudo apt-get upgrade 更新已安装的包
+sudo apt-get dist-upgrade 升级系统
+sudo apt-cache depends package 了解使用该包依赖哪些包
+sudo apt-cache rdepends package 查看该包被哪些包依赖
+！sudo apt-get sourse package 下载该包的源代码
+
+------
+cat /etc/apt/sources.list 
+可以看到地址 美国的地址
+国内镜像地址：https://mirrors.tuna.tsinghua.edu.cn/
+先备份默认的源地址：
+sudo cp /etc/apt/sourecs.list /etc/apt/sourecs.list.backup
+cd /etc/apt/ 切换目录查看
+ls -a查看
+
+2、 全选复制
+进入Vim编辑器，按 v 进入Visual模式。
+键入 gg 到达文本第一行。
+键入 G 到达文本最后一行并选中所有文本。
+键入 y 即可复制到寄存器中。
+键入 p 即可粘贴寄存器中的内容。
+
+su root 
+echo '' > sources.list 我置空之后再粘贴
+cat sources.list 
+vim sources.list 现在应该是空的
+找不到vim指令 ubuntu本身没有安装vim 用vi也行
+vi sources.list 
+把镜像地址的内容拷贝进来
+:wq
+更新源地址：sudo apt-get update 
+也就是通知到apt管理员 我们已经更新了源
+我这一步没有执行，我是怎么还是这么慢
+
+ubuntu软件安装、卸载的最佳实践：
+使用apt完成安装和卸载vim，并查询vim软件的信息：
+sudo apt-get remove vim 
+sudo apt-get install vim 
+sudo apt-cache show vim
+
+
+
+解决Ubuntu与Windows之间无法复制粘贴问题 ：
+sudo apt-get autoremove open-vm-tools //卸载已有的工具
+sudo apt-get install open-vm-tools    //安装工具open-vm-tools
+sudo apt-get install open-vm-tools-desktop  //安装open-vm-tools-desktop
+
+
+----远程登录ubuntu------------
+ssh介绍：
+secure shell.IETF指定，SSH为建立在应用层和传输层基础上的安全协议。
+目前较可靠，专为远程登录会话和其他网络服务提供安全性的协议，常用于远程登录。几乎所有UNIX/LINUX平台都可以用于运行SSH。
+使用SSH服务，需要安装相应的服务器和客户端，客户端和服务器的关系：如果，A机器想被B机器远程控制，那么A机器需要安装SSH服务器，B机器需要安装SSH客户端。
+和Centos不一样，ubuntu默认没有安装SSHD服务，使用netstat指令查看：api install net-tools
+因此，我们不能进行远程登录。
+
+SSH远程登录原理示意图：
+windowsB系统电脑 可以远程登录到一台 linux ubuntuA服务器
+
+windows: ssh客户端 比如xshell
+linux: ssh服务端(sshd没有默认安装 命令查看 netstat -anp | more 发现没有22号端口 说明ubuntu没有默认监听，要安装)若指令没有，执行 apt install net-tools
+
+安装SSH和启用
+suto apt-get install openssh-server
+执行上面指令后，在当前这台linux上就安装了SSH服务端和客户端
+service sshd restart ? start 
+执行上面的指令后，就启动了 sshd 服务，会监听22端口
+
+这个时候再查看 22端口
+netstat -anp | more
+
+然后用xshell6连接 之前搞过的
+
+----------
+从一台linux系统远程登录到另外一台linux系统
+在创建服务器集群时，会使用到该技术
+基本语法：
+ssh 用户名@IP
+例如：ssh ghost@192.168.200.222
+使用ssh访问，如访问出现错误，可查看是否有该文件
+/.ssh/known_ssh 尝试删除该文件解决，一般不会有问题
+
+退出：
+exit / logout 
+
+10min--回
+
+-----为什么需要远程登录到linux--------
+说明：公司开发时候，具体的应用场景是这样的：
+1. linux服务器是开发小组共享的
+2. 正式上线的项目是运行在公网
+3. 因此程序员在远程登录到linux进行项目管理或开发
+4. 画出简单的网络拓扑 示意图 辅助理解
+5. 远程登录客户端有 xshell6 xftp6 等
+
+公网：对外的IP 任何一个地方都可以访问到这个IP。
+下载xshell6: https://www.netsarang.com/en/free-for-home-school/ 下载这个家用版本
+安装时用管理员身份运行
+不要安装在C盘
+
+张三这台机器 要远程登录到公网，有个前提，你必须要知道远程的服务器的IP地址，要通过xshell工具登录，必须是已经连通的，比如说可以ping通。
+如何知道公网的这个IP呢？ ifconfig 
+windows张三这台 ping linux的IP
+
+192.168.245.129
+这次又给我教训了，替换或者删除，一定要备份文件。
+
+一次性接收--下次还要输入密码
+接收并保存--下次不用输入了
+
+输入用户 密码 可以把字体设置大点
+我双击xshell用户名 没有反应 因为我虚拟机没有装sshd
+欧克。终端可以看到远程的linux了。
+
+-------------
+远程上传下载文件 xftp6
+是一个基于windows平台的功能强大的SFTP FTP文件传输软件。使用了XFTP以后，windows用户能安全的在 unix/linux和windows pc之间传输文件。
+xshell无法做到文件下载的。
+
+因为你要文件下载，前提肯定是网络是通的哈。
+协议选择 SFTP
+端口 22 
+
+双击又是同样的问题，fuck
+
+linux 中文的问题？？文件夹名 终端上显示？
+终于明白了，xtfp 工作种的使用了，现在才明白这个真正的用法。
+
+配置中文输入法：20.04
+sudo apt-get install fcitx-googlepinyin
+设置选择 fcitx 重启
+打野的，ctrl + 空格 唤出输入法
+
+汉化：
+apt update 为了更新服务器的啥？
+sudo apt update 
+sudo apt upgrade 更新服务器的系统
+然后 settings
+里面修改成中文
+重启
+又进settings 修改 中文。
+
+继续 sftp --
+真实工作环境 linux服务器离你十万八千里。
+
+应用场景很重要。也就是在哪里使用，为什么。
+细节讨论： 如何处理XFTP中文乱码问题。
+小齿轮 - 选项 utf-8 即可
+
+-=--安装mysql-----------
+mysql linux apt 文档
+https://dev.mysql.com/doc/mysql-apt-repo-quick-guide/en/
+
+第一条命令
+sudo apt-get update 
+sudo apt-get install mysql-server
+设置mysql 密码 
+查看mysql状态
+sys..
+
+终端中下划线 代表是等待输入 这是shell脚本的知识
+
+gcc / g++区别：
+https://blog.csdn.net/weixin_43693967/article/details/123719406
+gcc是GCC中的GUN C Compiler（C 编译器）
+g++是GCC中的GUN C++ Compiler（C++编译器）
+gcc -v
+g++ -v
+这狗屎真奇怪，这里不需要-get了
+sudo apt install gcc 没有-get了
+
+通过软链接来实现版本切换？
+
+----shell编程--------------
+shell是一个命令解释器，它为用户提供了一个向linux内核发送请求以便运行程序的界面系统级程序，用户可以用shell来启动 挂起 停止甚至是编写一些程序。
+mkdir ..  <-> shell <-> linux 
+当很多命令时，就写脚本文本。国内以bash为主流的。
+脚本格式要求：
+1.脚本以 #!/bin/bash开头
+2.脚本需要有可执行权限
+编写第一个shell脚本：
+  创建一个shell脚本，输出hello world
+脚本的常用执行方式：
+  1.输入脚本的绝对路径或相对路径
+  首先要赋予hellowrold.sh脚本的+x权限，再执行脚本
+  2. sh + 脚本
+  不用赋予脚本+x权限，直接执行即可
+
+ls 
+vim hello.sh 
+#!/bin/bash
+echo "hello wrold"
+ll
+./hello.sh 权限不够
+chmod u+x hello.sh
+ll 文件名变成绿色的了
+./hello.sh 用的相对路径 绝对路径也可以
+
+第二种执行
+为了演示，先把执行权限拿掉
+chmod u-x hello.sh 
+ll 
+sh hello.sh 
+
+--shell的变量
+shell变量介绍：
+1.linux shell变量分为：系统变量和自定义变量
+2.系统变量：$HOME $PWD $SHELL $USER等。比如：echo $HOME 
+3.显示当前shell中所有变量： set 
+  set | more 来查看所有的系统变量 很多
+
+shell变量的定义：
+基本语法：
+1. 定义变量：变量=值
+2. 撤销变量：unset 变量
+3. 声明静态变量：readonly变量，注意，不能unset
+
+快速入门：
+1. 定义变量A
+2. 撤销变量A
+3. 声明静态的变量B=2，不能unset
+4.可把变量提升为全局环境变量，可供其他shell程序使用
+
+vim var.sh
+
+#!/bin/bash
+#定义变量A
+A=100
+#输出变量需要加上$
+echo $A
+echo A=$A 输出是 A=100 第一个A是文本 后一个变量
+echo "A=$A" 同上
+
+#撤销变量A
+unset A
+echo "A=$A" 输出 A=
+
+#声明静态的变量B=2，不能unset
+#静态变量 不会反复的定义和初始化
+readonly B=2
+echo "B=$B"
+#静态变量不可以unset 否则报错
+unset B
+
+执行：先给一个权限或者不给也行，用sh
+chmod u+x var.sh
+ll
+./var.sh
+
+:nu 可以看到报错的行数。
+
+shell变量的定义：
+定义变量的规则：
+1.字母数字下划线组成 数字不开头
+2.等号两侧不能有空格
+3.变量名字一般习惯大写
+
+将命令的返回值赋给变量
+1. A=`date` 反引号，运行里面的命令，并把结果返回给变量A
+2. A=${date} 等价于反引号
+
+vim var.sh
+A = 100 这是错误语法，等号两侧没有空格
+
+C=`date`
+D=${date}
+echo "C=$C" ?我这个不输出呢？
+echo "D=$D"
+
+--设置环境变量
+基本语法：
+1. export 变量名=变量值 让shell变量输出为环境变量 
+2. source 配置文件 让修改后的配置信息立即生效
+3. echo $变量名 查询环境变量的值 
+
+案例：
+1. 在/etc/profle文件中定义TOMCAT_HOME环境变量
+2. 查看环境变量TOMCAT_HOME的值
+3. 在另外一个shell程序中使用 TOMCAT_HOME
+
+注意：在输出TOMCAT_HOME环境变量前，需要让其生效 source /etc/profile
+
+vim /etc/profile
+最下面增加内容：
+#定义一个环境变量
+export TOMACT_HOME=/opt/tomcat
+source /etc/profile 
+echo $TOMACT_HOME 输出变量值 /opt/tomcat
+
+vim var.sh 其他文件使用这个变量
+最后加：
+echo "tomcat_home=$TOMACT_HOME"
+./var.sh 输出：tomcat_home=/opt/tomcat
+
+shell脚本的多行注释如何写：
+:<<! 开头 结尾都是单独一行的 
+内容
+!   有点奇怪
+vim var.sh
+打开行号： :set nu
+:<<!
+C=`date`
+D=${date}
+echo="C=$C"
+!
+
+--位置参数变量 94跳
+
+
+
+
+
+--126 定制自己的linux 裁剪
+基本原理：
+启动流程介绍：
+制作linux小系统之前，了解一下linux的启动流程：
+1.首先linux要通过自检，检查硬件设备等有没有故障
+2.如果有多块启动盘的话，需要在BIOS中选择启动磁盘
+3.启动MBR中的bootloader引导程序
+4.加载内核文件
+5.执行所有进程的父进程，老祖宗systemd 
+6。环境界面
+
+在linux的启动流程中，加载内核文件时关键文件：
+1. kernel文件：vmlinuz-3.10.0-957.el7.x86_64
+2. initrd文件：inittramfs-3.10.0-957.el7.x86_64.img
+
+制作min linux思路分析：
+1. 在现有的linux系统centos7.6上加一块硬盘，/dev/sdb，在硬盘上分两个区，一个是/boot,一个是/,并将其格式化，需要明确的是，现在加的这个硬盘在现有的linux系统中是/dev/sdb，但是当我们把东西全部设置好后，要把这个硬盘拔出，放在新系统上，此时，就是/dev/sda 
+2. 在/dev/sdb硬盘上，将其打造成独立的linux系统，里面的所有文件都是需要拷贝进去的
+3. 作为能独立运行的linux系统，内核是一定不能少的，要把内核文件和inittramfs文件也一起考到/dev/sdb上
+4.以上步骤完成，我们的自制linux就完成了，创建一个新的虚拟机，将其硬盘指向我们创建的硬盘，启动即可
+5. 示意图分析思路
+
+--129 阅读linux内核源码
+linux0.01 1W行左右。
+5.9.8 -700W行
+
+阅读技巧：
+1.需要懂C语
+2.整体架构需要先了解清楚，现代OS一般由：进程管理、内存管理、文件系统、驱动程序和网络等组成。linux内核也是大致对应。
+3. 纵向阅读-按照程序的顺序执行一步步阅读 横向阅读-按模块进行，经常结合在一起进行
+4. linux启动的代码可顺着linux启动顺序一步步来阅读。比如内存管理可以单独拿出来阅读，反复的过程，不是一遍即可。
+
+目录：
+boot 引导相关代码
+fs  支持的文件系统的代码
+include 包含编译核心大部分的头文件
+init 核心初始化的代码，最重要的是main.c
+kernel 内核代码
+lib 核心库代码
+mm 内存管理模块
+tools 工具相关的
+Makefile 可能每个模块都对应自己的makefile c相关
+
+一个文档。
+结合自己的思考，再看别人的文档就思想碰撞了。
+
+或者拷到linux中
+tree linux-0.01/ 可以看到整个目录结构
+ll 当前目录 列表
+
+先说说main.c
+vim main.c 
+int main (void)
+{
+  time_init(); 初始化运行时间
+  tty_init(); 终端tty初始化
+  trap_init(); 陷阱门(硬件中断向量)
+  sched_init(); 调度程序初始化 
+  buffer_init(); 缓冲管理初始化
+  hd_init(); 硬盘初始化
+  sti(); 所有初始化工作完后，就开启中断
+  move_to_user_mode(); 切换到用户模式
+  if(!fork())
+  {
+    init();
+  }
+}
+
+内核升级。？跳。
 
 

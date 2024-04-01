@@ -1,7 +1,9 @@
 # vector
-## Element access:
+## Element access: 
+    实现思路：两种权限
     ### operator[]
-        reference operator[] (size_type n);const_reference operator[] (size_type n) const;
+        reference operator[] (size_type n); 可用于做左值 可修改可访问
+        const_reference operator[] (size_type n) const; 只能访问
     ### at 
         reference at (size_type n);
         const_reference at (size_type n) const;
@@ -20,11 +22,12 @@
                 range(1) template <class InputIterator>  
                             void assign (InputIterator first, InputIterator last);
                 fill(2)  void assign (size_type n, const value_type& val);
-    initializer list(3)  void assign (initializer_list<value_type> il); ???
+    initializer list(3)  void assign (initializer_list<value_type> il); ???      v.assign({3,6,8,9}); 
+							C++ 11的新特性初始化列表的应用
 
     ### push_back 
-        void push_back (const value_type& val);
-        void push_back (value_type&& val);
+        void push_back (const value_type& val);  复制或者移动-向末尾添加元素 拷贝构造函数 
+        void push_back (value_type&& val);  移动构造函数 
 
     ### pop_back 
         void pop_back();

@@ -1,0 +1,423 @@
+--1
+系统调用：内核给用户提供的一组接口
+库函数 用户态 内核态
+OS一般是通过软件中断从用户切换到内核态
+--2
+c库 IO 流程图
+突然想起平头哥的 二进制文件的读写是分水岭
+缓冲区有些是4K 8K 
+CPU读内存快，从磁盘吧数据拿到内存慢，缓冲区就是提高效率的
+磁盘为什么慢？大部分硬盘是机械硬盘，机械<电子
+CPU内的寄存器 > 一级缓存 二级 三级 > 内存 > 硬盘
+--3
+errno 记录系统的最后一次错误代码
+man fopen
+man strerror 用于解析errno 
+应用类 者多是用于写日志
+--4
+man perror
+根据errno值输出错误信息
+查看错误号 文件地址：
+/usr/include/asm-generic/errno-base.h
+/usr/include/asm-generic/errno.h
+xshell 向上滚动 快捷键
+--5
+虚拟地址空间 
+每个进程都会分配虚拟地址空间，在32位机器上，该地址空间为4G 
+2^32 = 4G  地址总线 寻址能力
+内存图 ！！！
+段错误--内存访问非法 
+看汇编 打印地址值 测出来 每个区大概范围
+栈空间多大，可以通过递归测试 也有个命令 
+大约10M 8M 栈空间是向下的 上面是高地址 先用高地址再用低地址
+命令行参数 int main (int argc, char * argv[]) 个数 参数的起始地址
+环境变量env 子进程都可以访问
+只读数据段：字符串常量
+sleep(100); #include <stdlib.h>
+man 3 sleep 
+#include <unistd.d>
+程序要放在内存中执行！！！ 测试是吧一个睡眠中的程序 删了，依旧在执行 说明执行和包是分离的，不依赖包
+进程中所说的指针变量，是虚拟地址，当应用程序使用虚拟地址访问内存时， MMU： 虚拟地址转物理地址
+--6
+文件描述符 打开现存文件或新建文件时，系统内核会返回一个文件描述符-非负整数 文件的标识
+程序运行起来后，每个进程都有一张文件描述表
+每打开一个新文件，则占用一个文件描述符，而且是空闲的最小的一个文件描述符
+默认三个状态是打开的 标准输出 输入 错误打印
+最多打开1024个 已经有3个了 还可以打开1021个
+cat /proc/sys/fs/file-max 当前系统允许打开最大文件个数
+ulimit -a 当前默认设置最大打开文件个数1024
+ulimit -n 5000 修改最大打开文件个数
+--7
+man 第一章是命令 第二章是系统调用 第三种是标准库 第四章？
+man 2 open   open是系统调用
+这个文档有个 类似函数重载 但是是C语言
+可变参数 来实现类似C++的函数重载
+open 打开 不存在则创建
+int open(const char *pathname, int flags)
+int open(const char *pathname, int flags, mode_t mode)
+mode: 之前说过，每个文件都有一个权限，文件所属者，文件所属组，文件其他   这个就是指定文件权限 只有文件不存在时才有效 
+返回文件描述符 失败返回-1
+flags：..必选项 + 可选项 只读只写 
+
+close 
+成功返回0 失败返回-1，并设置errno
+需要说明：当一个进程终止时，内核会对该进程所有未关闭的文件描述符调用close关闭
+但是对于一个常年累月运行的程序，比如网络服务器，不关闭则会占用大量文件描述符和系统资源
+vim配置
+--8
+waring:implicit declartion of function ...没有包含头文件
+man 2 close 
+如果以只读方式打开，文件不存在就报错！！
+fd = open("txt", O_RDONLY);
+man 2 open 看参数 返回值 头文件
+
+以只写方式打开一个文件，文件存在就打开，不存在就新建，不会报错
+fd = open("txt", O_WRONLY | O_CREAT, 0644);
+如果文件存在 0644权限就没有用
+查看权限 ls -l txt 
+-rw-r--r-- ... 对应0644 ？
+第三种，只读打开 文件存在报错 不存在新建
+fd = open("txt", O_WRONLY | O_CREAT | O_EXCL, 0644);
+第四种 读写打开 存在打开 不存在新建
+第五种 不存在就新建 存在就打开后清空
+fd = open("txt", O_WRONLY | O_TRUNC | O_CREAT, 0644);
+O_TRUNC 清空文件内容 
+第六种：O_APPEND 追加 不存在就报错 只写和追加打开
+fd = open("txt", O_WRONLY | O_APPEND, 0644);
+
+--09
+write 
+ssize_t write (int fd, const void *buf, size_t count);
+fd是open返回值-文件描述符 buf加const，是为了防止修改底层数据 
+写入成功数据返回字节个数 反之-1
+代码演示：写主逻辑，需要用到什么变量，再去声明，这样的顺序写代码
+strlen 不计算0的哈
+一次性读不完或者写不完 循环读 循环写
+
+--10
+不要用fread 这里linux高级编程 要用系统调用
+ssize_t read(int fd, void *buf, size_t count)
+从文件描述符fd中最多读取SIZE个字节保存到buf中，实际读取字节数通过返回值返回
+吧指定数目的数据读到内存(缓冲区)
+返回值：成功则返回(读取到的)字节个数 反之-1
+要求读100个 文件只有30个 则返回30个！！
+代码演示：
+#define SIZE 20
+char buf[SIZE];
+memset(buf, 0, SIZE);
+一次读不完，循环读
+
+--12
+阻塞非阻塞
+去读数据 没有数据 一直等待的行为状态
+哪些可能有阻塞行为
+#include <stdio.h>
+int main ()
+{
+	char ch = -1;
+	ch = getchar(); 从标准输入获取一个字符
+	putchar(ch);
+	return 0;
+}
+
+--13
+man fseek
+man lseek
+off_t lssek (int fd, off_t offset, int whence)
+改变文件的偏移量
+offset 根据whence来移动的位移数-偏移量 正右移 负左移 
+whence SEEK_SET SEEK_CUR SEEK_END
+成功则返回新的偏移量 反之-1
+
+所有打开的文件都有一个当前文件的偏移量，简称cfo,通常是一个非负整数，用于表明开始处到文件当前位置的字节数
+代码演示：
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+#define SIZE 128
+
+int main (void)
+{
+	int fd = -1;
+	int ret = -1;
+
+	char buf[SIZE];
+
+	fd = open("txt", O_RDWR | O_CREAT, 0644);
+	if (-1 == fd)
+	{
+		perror("open");
+		return 1;
+	}
+	printf("fd = %d \n", fd);
+
+	write(fd, "ABCDEFG", 7);
+
+	ret = lseek(fd, 32, SEEK_SET);
+	if (-1 == ret)
+	{
+		perror("lseek");
+		return 1;
+	}
+
+	write(fd, "1234567890", 10);
+	// 无法读取的 因为在最后了 
+
+lseek(fd, 0, SEEK_SET); 将文件位置指针指向文件开头 即可
+
+	memset(buf, 0, SIZE);
+	read(fd, buf, SIZE);
+	printf("read ret: %d buf: %s \n", ret,  buf);
+	这样无法读取到数据？ read ret : 0 buf: 
+	为啥0个？因为文件指针已经指到了末尾 需要：lseek重新读数据之前置零
+
+
+	close(fd);
+
+	return 0;
+}
+显示：之前的部分被覆盖了 然后很多不可显示的字符 ascii为0 的 man ascii 看0的 '\0' 他不是一个可见的字符
+32+10 个字节。 ls -l txt 确实是42个
+
+--14 
+文件相关操作函数
+stat函数 ！重点 获取指定文件的信息
+终端：stat txt 获取信息
+int stat (const char *path, struct stat *buf)
+代码演示： 零级指针 一级指针
+忘记了，就 man 2 stat 看结构体
+用条件编译来注释大量代码 #if 0   #endif
+系统编程，就是看文档，练习
+代码演示 和 stat txt 打印一样的
+
+--15
+man 2 stat  看文件信息结构体
+搜索： /st_mode 下一个下一个
+7种 这里又见到了 属性 & 某个二进制位 从而知道选择了什么属性
+吧另外一个文件前10行 读进来如何读？
+:r !head -10 6stat.c
+
+#include 6个 省略
+
+// 显示文件类型的第一个版本
+int show_file_type (struct stat *s)
+{
+	switch (s->st_mode & S_IFMT)
+	{
+		普通文件 regular file
+		case S_IFREG:
+			printf("该文件是普通文件");
+			break;
+		case S_IFDIR:
+			printf("该文件是目录");
+			break;
+		case S_IFCHAR:
+			printf("该文件是字符设备");
+			break;
+		case S_IFBLK:
+			printf("该文件是块设备");
+			break;
+		case S_IFSOCK:
+			printf("该文件是套接字文件");
+			break;
+		case S_IFIFO:
+			printf("该文件是管道");
+			break;
+		case S_IFLNK:
+			printf("该文件是符号链接"); //VIM DW删除
+			break;
+		default:
+			printf("未知文件类型");
+			break;
+	}
+	return 0;
+} 从一个括号切换到对应的另一个 按%-vim
+
+int main (int argc, char **argv)
+{
+	int ret = -1;
+	struct stat s;
+
+	容错判断
+	if (2 != argc)
+	{
+		printf("usage: ./a.out filename \n");
+		return 1;
+	}
+
+	获取文件信息
+	ret = stat(argv[1], &s);
+	if (-1 == ret)
+	{
+		perror("stat");
+		return 1;
+	}
+
+	显示文件的类型
+	show_file_type(res);
+}
+照着文档 弄就行了。
+测试： gcc stat.c 
+./a.out /home/
+./a.out /dev/input/mouse1
+./a.out /dev/sda
+./a.out /dev/sda1
+
+--16
+// 显示文件类型的第2个版本
+因为看到了很多宏，就利用起来
+int show_file_type (struct stat *s)
+{
+	if (S_ISREG(s->st_mode))
+	{ 普通文件
+		printf("Is a regular file \n");
+	} 目录
+	if (S_ISDIR(s->st_mode))
+	{
+		printf("is a directory");
+	}
+	字符设备
+	块设备
+	符号链接
+	管道文件
+	套接字
+}
+看文档 和 英文
+
+--17
+文件权限 位操作& 1 0 
+s->st_mode & S_IRUSE 返回1或0 
+返回1 代表有S_IRUSE权限
+man 2 stat  查看有哪些 文件权限
+
+int show_permission (struct stat *s)
+{
+	文件所属组
+	文件所属者
+	文件其他
+}
+
+--18
+access函数 测试指定文件是否具有某种属性
+int access (const char *pathname, int mode)
+0-有某种权限，或者文件存在 -1-没有，或文件不存在
+mode: R_OK W_OK X_OK F_OK
+
+chmod函数 修改文件权限
+int chmod (const char *pathname, mode_t mode(8禁止数))
+0成功 -1失败
+
+chown函数 
+修改文件所有者和所属组
+int chown(const char *pathname, uid_t owner, gid_t group)
+
+truncate函数 修改文件大小
+link函数 创建一个硬链接
+symlink函数 创建一个软链接
+readlink函数 读软连接对应的文件名，不是读内容
+unlink函数 删除一个文件 -软硬链接文件
+rename函数 重命名
+
+--19
+文件描述符复制 重点
+dup() dup2() 非常有用的系统调用 用来复制一个文件的描述符
+Unix环境编程 工具书  看IO 进程 PCB 指向同一个文件表 
+这个方法就是找到最小的文件描述符表的索引 然后指向这个文件表
+int dup(int oldfd)
+代码测试：这个是指向同一张文件表 包括文件偏移量
+代码省略
+
+--20
+dup2  int dup(in oldfd, int newfd)
+二者有啥区别 
+场景就是：重定向
+
+--21
+tty 终端
+文件描述符表 默认已经占用3个 每个指向一个终端
+dup dup2就是复制一个，指向复制的那个的终端 就是引用
+dup2是断开之前的，重新连一个
+过程图！！
+
+--22
+open close read write lseek
+stat 
+fopen是调用这里的open实现的，因为这里是系统调用
+配置VIM ！！！配置局部的
+
+--23
+fcnlt函数 改变已打开的文件性质 对描述符提供控制
+int fcnlt(int fd, int cmd, ...)
+(操作的文件描述符，操作方式，针对cmd的值，能被接收的参数)
+
+有5种功能： 省略了 看课件吧
+man fcntl  描述列说了和dup2的区别
+这个只能找出最小的可用的描述符索引 dup2可以指定
+第三个参数是0 表示返回一个最小的可用的文件描述符 并且>=0 
+
+文件打开会覆盖和不会覆盖的情况？
+两个程序打开同一个文件是会覆盖之前的 偏移量会重置
+如果是复制的两个文件描述符，就是追加，不额外设置属性的话 因为偏移量不会重置
+ 
+--24
+继续上面的5个作用 fcnlt函数
+stat text
+man fcnlt 
+看 F_SETFL 有些属性不能设置的，即使设置了也会被忽略的
+代码演示 可以设置的几个属性
+这个要练习哈 ！！！
+
+--25
+目录相关操作
+getcwd
+chdir
+opendir
+closedir
+readdir 
+这些man哈就出来了 不用特别记忆
+
+char *getcwd(char *buf, size_t size)
+获取当前进程的工作目录
+代码演示：守护进程就会使用到
+buf在使用之前都要 memset(buf, 0, SIZE)
+子进程改变工作目录 不影响父进程
+
+--26
+因为之前的close open read 无法读写目录的
+所以搞了这几个接口 
+opendir closedir readdir
+DIR *opendir(const char *name)
+DIR 猜都是结构体
+
+指针真可怕，使用必须初始化
+代码演示
+
+--27
+struct dirent *readdir (DIR *dirp)
+struct dirent
+{
+	ino_t d_ino;
+	off_t d_off
+	signed short int d_reclen
+	unsigned char d_type 文件有7种类型 块设备 。。
+	char d_name[256] 文件名
+}
+
+循环读目录内容
+while (1)
+{
+	我想到了之前教学中  读取目录
+} 我以为代码演示中没有迭代 循环中如何停止的？
+
+有些shell命令 就是调用了系统调用
+
+有需要，多看man手册！！！
+
+在视频代码中增加 目录判断 
+
+----明天吧之前看的 整理哈！！！练习哈 

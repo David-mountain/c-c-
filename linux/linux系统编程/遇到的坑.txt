@@ -1,0 +1,101 @@
+1. ubuntu无法安装gcc
+2. 镜像换源
+	https://blog.csdn.net/weixin_47869094/article/details/129769689
+3、vim 如何把一个文件中的内容复制到另一个文件
+	举例：从a.txt复制一些内容到b.txt
+3.1、新建个文件a.txt，里面输入以下内容，保存。要复制的话可以输入 双引号+任意变量名+要复制的行数+yy，比如这里我输入："a3yy 则会复制从光标处开始往后三行到剪贴板，注意双引号是英文双引号
+3.2 2、新建个文件b.txt，输入双引号+之前复制用的变量名+p，这里我输入 "ap 
+4.vim全选并复制内容（vim编辑模式下复制粘贴）
+	http://wbfens.com/a/dy/12027.html
+5. Vim编辑器中的复制和全选复制
+https://blog.csdn.net/x5445687d/article/details/128023229
+
+6.报错：无法修正错误，因为您要求某些软件保持现状，就是它们破坏了软件包之间的依赖关系
+6.1 清楚apt-get缓存:
+sudo apt-get clean
+sudo apt-get autoclean
+6.2 移除 broken packages
+sudo apt-get -f install
+6.3 重新安装 build-essential
+
+终于找到原因了，没有勾选，可以从互联网 开源中下载。
+
+7. 运行c代码也是
+写好了 然后 gcc a.c -o a 
+然后我继续 ./a.c 就是不行 命令错了 
+是： ./a  这样就可以了
+
+运行第一个cpp程序：
+g++ testcpp.cpp -o testcpp
+注意：testcpp.cpp 一定要写在 tsetcpp前面。-o随意。
+
+8. mysql运行坑
+遇到使用权限拒绝的解决方案：
+sudo mysql -u root -p
+
+https://blog.csdn.net/m0_70885101/article/details/127414296
+
+以及如何开始使用mysql
+service mysql start
+service mysql stop
+service mysql restart # 重启mysql
+
+ 确认是否启动成功
+ sudo netstat -tap | grep mysql
+
+9. 连接mysql时 ubuntu 知不道mysql.h
+居然说没有mysql.h这个文件，可是我确实安装了mysql了啊
+原来是缺少libmysqlclient-dev，OK安装就是了:sudo apt-get install libmysqlclient-dev
+
+10. mysql退出？
+quit
+exit
+关闭mysql
+service msyql stop
+
+完整流程：
+service mysql start
+sudo netstat -tap | grep mysql
+sudo mysql root -p 好像不是这句
+mysql -u root -p
+quit
+
+11. 终端无法复制粘贴
+sudo apt-get autoremove open-vm-tools 
+ sudo apt-get install open-vm-tools 
+sudo apt-get install open-vm-tools-desktop
+我应该是之前源有问题的时候 安装这个 没装上 就忘记了
+
+12.mysql undefined reference问题 链接错误这是
+g++ mysql-tset.cpp -o mt.exe -I/usr/include/mysql
+ g++ -o Worker.exe *.cpp -I/usr/include/mysql -lmysqlclient -L /usr/lib
+-I 大写i 代表扩展包包含文件目录
+-L 大写L 扩展库目录
+-l 小写L 代表连入的库文件名
+空格可加可不加
+
+查lib: mysqlclient文件
+find -name mysqlclient
+ls -lR | grep mysqlclient
+Error 1045: Access denied for user 'root'@'localhost' (using password: YES)
+
+sudo systemct1 stop mysql
+sudo vim /etc/mysql/my.cnf
+skip-grant-tables
+sudo systemctl start mysql
+
+输入法还没有安装  终端显示中文
+
+ubuntu fatal error: mysql.h: No such file or directory
+sudo apt-get install libmysql 包名不对 反正是安装这个
+
+
+
+
+
+
+
+
+
+
+

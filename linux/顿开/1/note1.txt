@@ -1,0 +1,2 @@
+c/c++语法基础上，windows也是一个框架
+windows必须要复习 就是熟练使用API即可

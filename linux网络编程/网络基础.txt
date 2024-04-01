@@ -474,9 +474,302 @@ TCP服务器通信步骤：
 读写  
 关闭  close 
 
+-----09复习-------------
+应用层协议：
+FTP 文件传输协议 
+HTTP 超文本传输协议
+NFS  网络文件系统 
+
+飞秋走UDP的
+
+不同主机间的进程通信：socket 
+socket: 读缓冲区 写缓冲区 
+socket成对实现的 
+字节序：大端小端，网络多是大端，大型服务器是大端，小型计算机多是小端
+htonl 主机字节序转网络字节序
+htons 
+ntohl 
+ntohs 
+
+ip转换：
+#include <arpa/inet.h> 
+int inet_pton(int af, const char *src, void *dst);
+将点分十进制 转成32位网络大端的数据 
+参数：
+af: AF_INET IPV4  
+    AF_INET6 IPV6 
+src: 点分十进制串的首地址
+dst: 32位网络数据的地址 
+成功返回1 
+
+#include <arpa/inet.h> 
+const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
+将32位大端的网络数据转成点分十进制串 
+参数： 
+        af: AF_INET
+        src: 32位大端的网络数 地址
+        dst: 存储点分十进制串 地址 
+        size：存储点分串数组的大小 
+        返回值：存储点分制串数组首地址 
+
+网络通信解决三大问题：协议 IP 端口 
+
+arp -a 查看max地址 
+
+ipv4 v6套接字结构体 
+通用套接字结构体(通通要转成这个结构体)
+struct sockaddr 
+{
+        sa_famaily_t sa_famaily;
+        char sa_data[14];
+} 
+
+TCP:
+建立连接 使用连接 关闭连接 
+
+创建套接字API：
+#include <sys/socket.h> 
+int socket(int domain, int type, int protocol);
+创建套接字 
+domain： AF_INET
+type: SOCK_STREAM 流式套接字 用于TCP通信 
+protocol: 0
+成功返回文件描述符，失败返回-1 
+
+连接服务器 
+#include <sys/socket.h> 
+int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+sockfd: socket套接字 
+addr: ipv4套接字结构体的地址 
+addrlen: ipv4套接字结构体的长度 
+
+截图看看。
+listen:
+int listen(int sockfd, int backlog);
+sockfd: 套接字
+backlog: 已完成连接队列和未完成连接队列 数之和的最大值，128 
+
+accept:
+int accept(int accept, struct sockaddr *restrict address, socklen_t *restrict address_len);
+如果连接队列没有新的连接，accept会阻塞
+功能：从已完成连接队列提取新的连接
+
+tcp服务端通信步骤：
+创建套接字 socket 
+绑定 bind 
+监听 listen 
+提取 accept 
+读写 
+关闭 
+
+client code:
+{
+        // 创建套接字 
+        int sock_fd;
+        sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+        // 连接服务器 
+        struct sockaddr_in addr;
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(8080);
+        inet_pton(AF_INET, "192.168.21.29", &addr.sin_addr.s_addr);
+        connect(sock_fd, (struct sockaddr *)&addr, sizeof(addr));
+        // 读写数据 
+        char buf[1024] = "";
+        while (1)
+        {
+                int n = read(STDIN_FILENO, buf, sizeof(buf));
+                write(sock_fd, buf, n);
+                n = read(sock_fd, buf, sizeof(buf));
+                write(STDOUT_FILENO, buf, n):
+                printf("\n");
+        }
+        //关闭 
+        close(sock_fd);
+}
+
+server code: ubuntu 
+int main () 
+{
+        // 创建套接字 
+        int lfd = socket(AF_INET, SOCK_STREAM, 0);
+        // 绑定 
+        struct sockaddr_in addr;
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(8000);
+        // addr.sin_addr.s_addr = INADDR_ANY; // 0 绑定的是通配地址 把所有的IP都绑定上 
+        inet_pton(AF_INET. "192.168.21.37", addr.sin_addr.s_addr); // 单独给某个IP绑定
+        int ret bind(lfd, (struct sockaddr *)&addr, sizeof(addr));
+        if (ret < 0)
+        {
+                perror("");
+                exit(0);
+        }
+        // 监听  
+        listen(lfd, 128);
+        // 提取 
+        struct sockaddr_in cliaddr;
+        socklen_t len = sizeof(cliaddr);
+        int cfd = accept(lfd, (struct sockaddr *)&cliaddr, &len);
+        char ip[16] = "";
+        printf("new client ip=%s, port=%d \n", inet_ntop(AF_INET, &cliaddr.sin_addr.s_addr, ip, 16), 
+        ntohs(cliaddr.sin_port));
+        // 读写 
+        char buf[1024] = "";
+        while (1)
+        {
+                write(cfd, "hello", 5);
+                read(cfd, buf, sizeof(buf));
+                printf("%s \n", buf);
+        }
+        // 关闭 
+        close(lfd); 无法监听新的连接了
+        close(cfd); 无法通信了 
+}
+
+封装。举一个例子：包裹函数。
+int Bind (int fd, const struct sockaddr *sa, socklen_t salen)
+{
+        int n;
+        if ((n = bind(fd, sa, salen)) < 0)
+                perr_exit("bind error");
+
+        return n;
+}
+
+client: 读缓冲区 
+server: 
+服务端不断发送，上一次发送的512个还没有接收完，又发送了1024个，这个时候
+客户端读取时无法区分，谁是上一次的，谁是这一次的。这种现象在网络中叫黏包。
+你怎么去解决呢？
+1. 约定好，一次发送固定的字节数 但是太死了，没有达到其他填0 
+2. 数据的结尾加一个标记\n 
+3. 加个头 这次多少字节的数据
+截图，黏包读取函数。
+
+--------三次握手-----------------
+三次握手，建立连接的过程。
+四次挥手，断开连接的过程。
+电话面试的时候，如果你连这个都不知道，就不用来面试了。
+
+确认序列号的含义：
+1. 确认收到对方的报文 
+2. 期望下一次对方的序列号为我的确认序列号
+
+确认序列号等于：
+对方发送过来的序列号 + 标志位长度SYN(1) + 数据长度 
+
+面试题：发了SYN没有回ACK，会有什么问题？
+就是第三次握手的时候，我没有回ACK了。
+如果你给服务端发了ACK，就会进入到未完成连接队列，
+如果一直不回ACK，就一直占用着未完成连接队列，如果多发几个ACK，就会占满。
+占满之后，如果再来新的连接，其他连接就无法进入了。
+这也是一个工具手段，SYN工具，导致没有新的连接的问题。
+现在服务器聪明了，多长时间还没有回，就把你踢掉。
+
+建立连接为什么要3次呢？2次不可以吗？
+
+------四次挥手---------------------
+发生在TCP断开连接的时候。
+client server 谁先挂都可以。三次握手只能是client先。
+
+-------滑动窗口-------------
+<mss 1460> 最大报文长度 
+下次的携带数据不要超过这个长度。三次握手的前两次。
+
+MTC：最大传输单元，和网卡有关系 
+最大一帧可以收的数据的长度是1500。
+
+滑动窗口： 
+太快了，来不及收的问题。
+TCP报头：窗口尺寸16位 作用：缓冲区的大小 
+A的缓冲区大小告诉B，不要一直发。
+
+每次从缓冲区读走一个，就会回一个ACK，
+那没有读，发送方怎么知道满了，三次握手时候有窗口尺寸，即缓冲区的大小，
+
+滑动窗口，截图。
+读走2个，然后就空出2个。
+
+--------多进程实现并发服务器流程-------------------
+之前只能处理1个客户端。
+创建进程 fork 
+
+6min 有点麻 
+这节课有点麻 
+
+--------代码实现多进程服务器-------------
+int main ()
+{
+        创建套接字，绑定
+        int lfd = tcp4bind(8000, NULL); 自己封装的 NULL所有IP绑定上
+        监听 
+        Listen(lfd, 128);
+        提取 
+        回射
+        struct sockaddr_in cliaddr;
+        socklen_t len = sizeof(cliaddr);
+        while (1)
+        {
+                char ip[16] = "";
+                提取
+                int cfd = accept(lfd, (sockaddr *)&cliaddr, &len);  cfd新的套接字
+                printf("new client ip=%s port=%d \n", inet_ntop(AF_INET, &cliaddr.sin_addr.s_addr, ip, 16),
+                        ntohs(cliaddr.sin_port));
+                fork创建子进程 
+                pid_t pid;
+                pid = fork();
+                if (pid < 0)
+                {
+                        error("");
+                        exit(0);
+                }
+                else if(pid == 0) 子进程 
+                {
+                        关闭lfd 
+                        close(lfd);
+                        char buf[1024] = "";
+                        read(cfd, buf, sizeof(buf));
+                        if (n < 0)
+                        {
+                                perror("");
+                                close(cfd);
+                                break;
+                        }
+                        else if (n == 0) 对方关闭了
+                        {
+                                prinf("client close \n");
+                                close(cfd);
+                                // break;
+                                exit(0);
+                        }
+                        else 
+                        {
+                                printf("%s \n", buf);
+                                write(cfd, buf, n);
+                        }
+                }
+                else 父进程 
+                {
+                        close(cfd);
+                        回收 
+
+                }
+        }
+        关闭 
+}
+
+------回收子进程的资源  跳---------------
 
 
+如果是两次握手呢？
+A发了一个SYN包，然后各种原因导致了延时，迟迟没到B，
+这个时候A以为丢包了，就会重发一个SYN包。B收到就返一个ACK。
+但是现在之前的那个SYN包到了B这，这时候又会返回一个ACK，
+就多创建了一个连接。
+而三次握手。客户端A已经知道刚刚连接了，现在就不会回了。就不回第三次，建立就不成功了。
 
+谁都可以先发起关闭的。
+谁主动谁就要等。2MSL。
 
 
 

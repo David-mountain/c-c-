@@ -1,0 +1,51 @@
+lib event
+网络库 使用较多的
+是用C写的、轻量级的开源高性能事件通知库，亮点：事件驱动 高性能 轻量级 专注于网络
+不如ACE臃肿庞大，源代码精炼、易读 
+跨平台 支持多种I/O多路复用技术
+chromium等开源库用了这个库
+底层实现就是多路IO技术
+
+核心实现：
+ Reactor反应堆模式是libevent的核心框架，以事件驱动，自动触发回调功能，之前说的epoll反应堆源码就是从这抽取出的
+ 1.4.x 早期版本，适合源码学习
+ 2.x 交心的版本
+ http://libevent.org 
+
+mkdir install 
+一个压缩包，解压 tar -xzvf 包名 -C ./install  
+sudo ./configure 检测环境，生成makefile 
+sudo make 编译
+sudo make install 安装
+
+头文件目录： /usr/local/include
+库路径：  /usr/local/lib/
+
+ls /usr/local/include/ 可以打开里面的头文件看看
+
+测试
+如果你是第三方库 都要加库名
+gcc demo.c -o demo -levent 
+
+3 
+libevent事件触发流程
+event_base_new() ->获取 结构体event_base 使用这个库要准备的结构体
+
+cd /use/local/include/
+找这个函数 event.中
+
+释放结构体函数 event_base_free()
+
+子进程重新声明的函数 省略了
+
+
+等待事件产生-循环等待
+event_base_dispatch() 相当于 while(1) {epoll_wait}循环监听
+
+退出循环监听
+event_base_loopexit() 等待固定事件之后退出
+event_base_loopbreak() 立即退出
+
+
+8min 
+

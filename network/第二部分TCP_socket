@@ -1,0 +1,309 @@
+1 socket
+ 之前进程间通信：
+	无名管道 命名管道 mmap 文件 信号 消息队列 共享内存 
+	只能用于 本机的进程间通信
+	不同主机的进程间 通信方法： socket-插座
+ socket 插座 成对出现 我的电脑要有，你的电脑也要有才能通信
+ 是一个伪文件 有一个读缓冲区 写缓冲区 返一个文件描述符，操作就可以读写进缓冲区
+ 全双工的 你可以给我发 我可以给你发 
+ 一般一个socket就可以了
+ 可以创建用于TCP通信的socket 或 UDP通信的socket
+预备知识：
+ 大小端  小端：低位存低地址，高位存高地址 高位：高位存低地址，低位存高地址
+主机字节序-主机会识别的(不用具体管大小端) 
+网络字节序-大端 
+流程：主机A，发送数据，转大端的网络字节序
+     主机B，接收数据，将大端的数据转成主机字节序
+哪些会转：
+  大于等于2个字节的才转阿，1一个字节哪儿来的大小端、
+  中文嘿嘿，字节流的这种不用转
+  你要告诉他IP PORT吧，主要就是这两个转
+  #include <arpa/inet.h>
+  32 htonl host->network long 4个字节用于转IP
+  16 htons network->host short 2个字节用于转端口
+  32 nthhl
+  16 ntohs 
+  代码演示 
+  char buf[4] = {192,168,1,2}; \unsigned char buf[4]
+  int num = *(int *)buf;  (int*)把字符数组buf强转 然后在解引用就是读取4个字节
+  int sum = htonl(num);
+  char *p = &sum;
+  printf("%d %d %d %d \n", *p, *(p+1), *(p+2), *(p+3)); 
+  2 1 -88 -64 为什么负数？
+  因为char *去取数的，这就看成一个有符号的数了 写网络程序-最好都定义成无符号整型的
+  所以要定义成无符号的： unsigned char *p = &sum;\
+  2 1 168 192 
+
+  unsigned short a = 0x0102;
+  unsigned short b = htons(a);
+  printf("%x \n", b); 0201
+
+  -- 又转回来了 192 168 1 1 
+  unsigned char buf[4] = {1,1,168,192};
+  int num = *(int *)buf;
+  int sum = ntohl(num);
+  unsigned char *p = (unsigned char *)&sum;
+  printf("%d %d %d %d \n", *p, *(p+1), *(p+2), *(p+3)); 
+
+4 点分十进制串转换
+	"192.169.1.2" 这个串我们称 点分十进制串
+	int inet_pton(int af, const char *src, void *dst); 点分十进制->32位网络大端数据
+	const char *inet_ntop(int af, const void *src, char *dst, socklen_t size); 32位网络大端数据->点分十进制
+
+	man inet_pton 
+	场景：发送数据 转成网络数据时候用
+	af: AF_INET AF_INET6  
+	src: 点分十进制的首地址 
+	dst: 32位网络数据的地址 
+	返回值1
+
+	man inet_ntop
+	场景：收到了数据，想查看哈数据
+	af: AF_INET
+	src: 32位网络大端数据的地址
+	dst: 存储点分十进制串 地址
+	size: 存储点分十进制数组的大小 16
+			最多，255.255.255.255 15位+/0 16个字节
+	返回值：存储点分制串数组 首地址 
+
+	注意：我这里之前一直疑惑的一个点："192.169.1.2"这个是点分十进制？然后后面又说用数组存储它，数组是点分十进制，我蒙了，久了忘记了C语言没有串，是用数组存储字符串的，所以说字符数组这个是点分十进制串。
+
+	代码示例：
+	char buf[] = "192.168.1.4";  点分十进制串
+	unsigned int num = 0;
+	inet_pton(AF_INET, buf, &num);	转成字节？
+	unsignedd char *p = (unsigned char *)&num;
+	printf("%d %d %d %d \n", *p, *(p+1), *(p+2), *(p+3)); 
+	192 168 1 4 这个已经是大端的了
+
+	char ip[16] = "";
+	printf("%s \n", inet_ntop(AF_INET, &num, ip, 16));
+
+5 ipv4套接字结构体
+	我们开发，一般就是把应用层的报组好就可以了。其他的头协议栈帮你组好了
+	我们只需要： 协议Schme IP PORT 把这几个关联的数据类型放到一起-放到一个结构体中，方便操作
+	man 7 ip
+	struct sockaddr in {
+		sa_family_t sin_family; 协议 AF_INET
+		in_port_t sin_port;     端口 
+		struct in_addr sin_addr; IP地址 也是一个结构体
+	}
+	struct in_addr {
+		uint32_t s_addr; IP结构体 历史遗留问题 需要保留这个结构体
+	}
+
+	ipv6套接字结构体太多了 看教案 
+
+	如果有v4 v6，那我不是要两个API发送？
+	struct sockaddr_in addr;
+	struct sockaddr_in6 addr2;
+	sendipv4("hehe", struct sockaddr_in);
+	sendipv6("hehe", struct sockaddr_in6);
+	我可以只用一个API吗？ 或者形参改变哈可以接收不同的类型
+	send("hehe", void *); 
+	void * 两种结构体类型都可以接收
+	但是在套接字结构体中，我们用另一个通用套接字结构体
+	用这个结构体，就是为了接口统一，用一个接口
+
+	struct sockaddr {
+		sa_family_t family;
+		char sa_data[14];
+	}
+	send("hehe", struct sockaddr *);
+	填写参数时候需要转哈struct sockaddr *即可
+
+6 TCP客户端代码
+	TCP 传输控制协议
+	特点：出错重传 每次发送数据对方都会回ACK，可靠  
+	图 教案PPT ！
+	TCP抽象成打电话：建立连接 使用连接 关闭连接
+	socket()
+	connect()
+	write()
+	read()
+	close()
+
+	man socket 
+	int socket(int domain, int type, int protocol);
+		domain: AF_INET
+		type: SOCK_STREAM 流式套接字，用于TCP通信 只需要组应用层的包，其他层的系统组
+						SOCK_DGRAM 用于UDP通信   只需要组应用层的包，其他层的系统组
+						SOCK_RAW 原始套接字 每个层的包都要你组
+		protocol: 0
+		成功返回文件描述符，失败返回-1 
+
+	man connect 
+	int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+	sockfd: socket套接字（是个文件描述符）
+	addr:  ipv4套接字结构体的地址 
+	addrlen: ipv4套接字结构体的长度
+
+7 tcp服务器通信流程
+	socket()
+	bind() 服务端是绑定 然后监听 客户端是连接
+	listen() 套接字主动变被动 
+	accept() 提取
+		阻塞直到有客户端任务
+	read()
+	write()
+	read() 返回值等于0，代表对方关闭
+	close() 
+
+	监听
+	1. 套接字主动变被动
+	2. 创建一个连接队列 
+		未完成连接队列
+		已完成连接队列 
+
+	提取连接
+	从已完成连接队列提取连接
+	提取连接得到一个新的已连接套接字，接下来用这个新的已连接套接字和客户端通信
+	为什么这样做？如果一个监听套接字，有多个客户端请求，服务端无法区分谁和谁
+	监听套接字
+	已连接套接字(客户端和这个套接字通信)
+
+	man bind 
+	int bind (int sockfd, const struct sockaddr *addr, socklen_t addlen)
+	成功返回0 失败返回-1 
+	man listen
+	int listen (int sockfd, int backlog)
+		backlog: 已完成连接队列和未完成连接队列数 之和的最大值 一般128，是8个字节？64位
+	man accept
+	int accept (
+		int socket, 
+		struct sockaddr *restrict address, 获取客户端的IP和PORT信息 IPV4套接字结构体 谁请求你阿的信息
+		socklen_t *restrict address_len IPV4套接字结构体的大小的地址
+	)
+	返回值：新的已连接套接字的文件描述符  
+
+8 代码演示
+	创建套接字 socket
+	绑定 bind 
+	监听 listen 
+	提取 accept
+	读写 
+	关闭
+
+	也可以用命令 nc ip 8080 这样去连接工具助手
+
+10 服务端代码编写
+	被动连接 
+	一旦连接之后 服务端可以先给客户端发报文
+	之前的网络工具-三眼怪有时候可能连接不成功 可能是防火墙 
+	这里另一个方法 开两个终端 一个做客户端 一个服务端
+	连接的这个 nc 是一个工具？ 我的不行呢
+
+	连接成功后，我们把服务端kill，然后重启，这个时候再去连接无法连接上，要过两分钟才行？
+	TCP状态转换 我们需要判断bind是否成功的代码(绑定原因)
+	修改了代码之后，我们再测试，就知道打印了服务端重启失败了 我们需要很多判断代码
+	wrap.h wrap.c 包裹函数 工具函数 
+
+11 wrap.h wrap.c socket工具函数
+	多了很多严谨的判断 考虑更加周全
+	信号不应该退出等情况
+
+12 
+	黏包问题
+	1. 约定好，一次发送固定的字节数  
+	2. 数据的结尾加一个标记 \n 
+	3. 每次发送数据加个头-长度头
+
+	利用3封装的工具函数 wrap.c中  
+	nLeft = 100 未读
+	nread = 5 已读 
+	
+	读取一行工具函数 readline 
+	是一个字节一个字节读取的(这个又抽取出去了) 
+	static int read_cnt; 默认是0 静态全局变量
+
+13 TCP通信 三次握手 	
+	三次握手和四次挥手 
+	三次握手： 建立连接的过程
+	四次挥手： 断开连接的过程
+	UDP是没有的 
+	客户端connect()时候发生的，这个过程
+
+	第一次握手组包： 14mac头 + 20IP + 20TCP + 无数据
+	20TCP： 有SYN: 1 表示要请求连接别人，默认是０ 　　ACK：０
+	第二次握手组包： 20TCP: SYN: 1  ACK: 1 
+	第三次握手组包： 20TCP: SYN: 0  ACK: 1
+
+	TCP报头： seq序列号 ack确认序列号
+	确认序列号： 1. 确认收到对方的报文 2.希望下次对方的序列号为我的确认序列号 
+	确认序列号是：(对方发送)过来的序列号 + 标志位长度SYN(1) + 数据长度 
+	第一次握手组包: seq随机的，假设 seq = x  ack = 0
+	抓包分析 
+
+	思考：
+	1. 发了SYN，没有回ACK，会有什么问题？
+	无法连接成功。
+	多发几个SYN，把未完成队列占满了，这个时候如果再有新的连接就无法进入了
+	早期这个叫洪流网络攻击？ 现在已经改了，如果你多久没有给我回，服务端就给你踢掉 
+	2. 建立连接为什么不是3次，不是2次呢？
+	我记得一个博客说是可以改成2次的
+
+15 四次挥手
+	发生在TCP断开连接的时候 close()
+	c -> s 
+	c <- s read的返回值等于0，判断对方关闭，这个时候也调用close关闭
+	c <- s 手动调用close()
+	c -> s
+	第一次挥手报文： 14mac头 20IP 20TCP(SYN-0 ACK-0 FIN-1)
+	第二次挥手报文： 14mac头 20IP 20TCP(SYN-0 ACK-1 FIN-0)
+	第三次挥手报文： 14mac头 20IP 20TCP(SYN-0 ACK-0 FIN-1)
+	第四次挥手报文： 14mac头 20IP 20TCP(SYN-0 ACK-1 FIN-0)
+
+	第二次是底层判断出read返回值等于0，发送的
+	第三次是程序员手动调用的close()
+	当然，可能第二次第三次会合成一次，是否合成则是是否和底层保持同步了，收到read()=0,马上就close()，所以一般都是4步
+	
+	第三次发送后，server端不是已经关闭了，为什么还会有第四次？
+	处于半关闭状态，对于应用层只可以接收，底层依然可以收发
+	close()关闭的是应用层，底层依然可以收发数据
+	那底层什么时候关闭呢？
+	发送完最后一个ACK后，等待最大报文生存时间的2倍，就关闭
+	为什么要等呢2倍这个MSL时间呢？
+	如果ACK发送过程中丢了，服务器是不会关闭的，服务器会重新发送一个FIN，如果你马上关闭了，就无法收到了，所以要等2倍时间。一句话，怕包丢了。
+
+18 滑动窗口
+	<mss 1460> 下次发送的数据包长度不能大于1460
+	mss 最大报文长度：一般出现在三次握手的前两次，用来告知对方发送数据的最大长度
+	MTU：最大传输单元 和网卡有关系的 ifconfig MTU: xxxx
+	即网卡最大一帧 可以收的数据的长度 
+
+	TCP是server端没有读，就不会发ACK 
+	客户端如何知道server端缓冲队列已经满了，前两次握手的时候发送了mms 
+	server端读取一个回一个ACK 
+	读走两个空出两个，这个滑动的样子，叫滑动窗口
+
+	UDP是你发我就收 
+
+19 多进程处理并发服务器流程
+	父进程 lfd  (cfd1删)
+	来一个客户端就fork子进程 cfd1 (lfd删)
+	其余客户端同理 
+
+	流程：
+	创建套接字
+	绑定
+	监听
+	while (1)
+	{
+		提取连接 
+		fork创建子进程 
+		子进程中，关闭lfd，服务客户端 
+		父进程关闭cfd,回收子进程的资源 
+	}
+	关闭
+
+	当子进程退出会给父进程发出信号 SIGCHILD 
+
+	代码演示
+	遇到问题，接收回射一条消息后，终端出现大量输出？
+	父进程没有阻塞，不是很理解 打不打断 不懂？？
+	用Accept 不用accept 是封装很好吗 看看代码才行
+
+22 回收子进程的资源
+	作业：多线程版实现哈
+
+	
